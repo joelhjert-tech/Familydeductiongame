@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Push The Button — War Room</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+img { image-rendering: pixelated; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #07050d; --stone: #110d06; --panel: #1a1208; --panel2: #241a0e; --panel3: #2e2212;
+  --gold: #c9a84c; --gold2: #f0d070; --red: #8b1a1a; --red2: #c0392b;
+  --green: #2e6b3e; --green2: #4a9e6b; --purple: #5b2d8a; --purple2: #9b59b6;
+  --ember: #e8832a; --text: #e8d9b8; --muted: #7a6445; --border: #3d2910; --border2: #5a3d1e;
+  --px: 'Press Start 2P', monospace;
+}
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--px); color: var(--text); font-size: 10px;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 15% 50%, rgba(180,80,10,.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 50%, rgba(180,80,10,.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(100,40,5,.2) 0%, transparent 60%);
+}
+
+/* ── Scanlines overlay ── */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,.08) 3px, rgba(0,0,0,.08) 4px
+  );
+}
+
+/* ── Ember particles ── */
+#embers { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.ember {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--ember); opacity: 0;
+  animation: rise var(--dur, 8s) var(--delay, 0s) infinite ease-in;
+}
+@keyframes rise {
+  0%   { transform: translateX(0) translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: .8; }
+  80%  { opacity: .3; }
+  100% { transform: translateX(var(--dx, 20px)) translateY(-100vh) scale(.3); opacity: 0; }
+}
+
+/* ── Red alert flash ── */
+#alert-overlay {
+  position: fixed; inset: 0; background: rgba(192,57,43,0); pointer-events: none;
+  z-index: 9997; transition: background .1s;
+}
+@keyframes alertFlash {
+  0%,100% { background: rgba(192,57,43,0); }
+  50%      { background: rgba(192,57,43,.18); }
+}
+.alert-active { animation: alertFlash 1s infinite; }
+
+/* ── Layout ── */
+#wrap { display: flex; flex-direction: column; height: 100vh; padding: 5px; gap: 5px; position: relative; z-index: 1; }
+#topbar {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 16px; background: var(--panel);
+  border: 2px solid var(--border2); border-radius: 4px;
+}
+#main { flex: 1; display: flex; gap: 5px; min-height: 0; }
+#center { flex: 1; position: relative; min-height: 0; }
+#center-panel {
+  position: absolute; inset: 0;
+  background: var(--panel);
+  border: 2px solid var(--border2); border-radius: 4px;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 40px rgba(0,0,0,.6);
+}
+/* Stone texture on center panel */
+#center-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,.015) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255,255,255,.015) 25%, transparent 25%),
+    linear-gradient(45deg,  rgba(0,0,0,.04)  25%, transparent 25%),
+    linear-gradient(315deg, rgba(0,0,0,.04)  25%, transparent 25%);
+  background-size: 12px 12px;
+}
+#phase-content { width: 100%; padding: 20px 24px; position: relative; z-index: 1; }
+#sidebar { width: 190px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+#playerbar {
+  flex-shrink: 0; display: flex; gap: 6px; flex-wrap: wrap; padding: 7px 12px;
+  background: var(--panel); border: 2px solid var(--border2); border-radius: 4px;
+  align-items: center;
+}
+
+/* ── Phase-in animation ── */
+@keyframes phaseIn {
+  from { opacity: 0; transform: scale(.97) translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.phase-in { animation: phaseIn .35s cubic-bezier(.25,.46,.45,.94) both; }
+
+/* ── Stone panel ── */
+.stone {
+  background: var(--panel);
+  background-image:
+    linear-gradient(135deg, rgba(255,255,255,.015) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(255,255,255,.015) 25%, transparent 25%),
+    linear-gradient(45deg,  rgba(0,0,0,.04) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(0,0,0,.04) 25%, transparent 25%);
+  background-size: 12px 12px;
+  border: 2px solid var(--border2); border-radius: 4px;
+  box-shadow: inset 0 0 16px rgba(0,0,0,.5);
+}
+.gold-frame { border-color: var(--gold); box-shadow: inset 0 0 16px rgba(0,0,0,.5), 0 0 18px rgba(201,168,76,.15); }
+.red-frame  { border-color: var(--red2); box-shadow: inset 0 0 16px rgba(0,0,0,.6), 0 0 20px rgba(192,57,43,.25); }
+
+/* ── Typography ── */
+h1 { font-size: clamp(.7rem,2vw,1.1rem); color: var(--gold); text-shadow: 0 0 14px rgba(201,168,76,.5), 2px 2px 0 #1a0800; letter-spacing: 2px; }
+h2 { font-size: clamp(.55rem,1.4vw,.8rem); color: var(--gold2); }
+.label { font-size: .5rem; color: var(--gold); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 4px; }
+.divider { width: 100%; height: 2px; background: repeating-linear-gradient(90deg, var(--border2) 0, var(--border2) 4px, transparent 4px, transparent 8px); margin: 6px 0; }
+.center-text { text-align: center; }
+
+/* ── Top bar ── */
+#round-badge { background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; padding: 4px 10px; font-size: .5rem; color: var(--muted); }
+#timer-track { height: 6px; background: var(--panel2); border-radius: 2px; overflow: hidden; width: 130px; margin-top: 3px; }
+#timer-fill  { height: 100%; background: var(--gold); transition: width .8s linear, background .5s; }
+#timer-label { font-size: .55rem; color: var(--gold); margin-left: 6px; }
+.restart-btn {
+  background: rgba(192,57,43,.12); border: 2px solid var(--red2); color: #f2b4ac;
+  border-radius: 4px; font-family: var(--px); font-size: .45rem; padding: 7px 10px;
+  cursor: pointer; letter-spacing: .08em; box-shadow: inset 0 0 12px rgba(0,0,0,.35);
+}
+.restart-btn:hover { background: rgba(192,57,43,.24); color: #fff; }
+
+/* ── Torch animation ── */
+.torch { font-size: 1.3rem; animation: flicker 2.5s infinite; display: inline-block; }
+.torch:nth-child(2) { animation-delay: .9s; }
+@keyframes flicker { 0%,100%{opacity:1;transform:scaleY(1)} 30%{opacity:.8;transform:scaleY(.95)} 70%{opacity:.9;transform:scaleY(1.03)} 85%{opacity:.75;transform:scaleY(.98)} }
+
+/* ── Lobby ── */
+.lobby-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
+.lobby-banner {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--panel2); border: 2px solid var(--border2); border-radius: 4px;
+  padding: 10px 14px; width: 100px; transition: border-color .3s, box-shadow .3s;
+}
+.lobby-banner.connected {
+  border-color: var(--color);
+  box-shadow: 0 0 14px rgba(var(--color-r,100),var(--color-g,100),var(--color-b,100),.25);
+}
+.shield { width: 24px; height: 26px; position: relative; }
+.shield svg { width: 100%; height: 100%; }
+.banner-name { font-size: .48rem; color: var(--text); text-align: center; line-height: 1.6; }
+
+/* ── Phase heading ── */
+.phase-kicker { font-size: .5rem; color: var(--muted); letter-spacing: .15em; text-transform: uppercase; margin-bottom: 6px; }
+.phase-title  { font-size: clamp(.75rem,2.2vw,1.3rem); letter-spacing: .15em; text-shadow: 2px 2px 0 #000; line-height: 1.4; }
+.phase-sub    { font-size: .55rem; color: var(--muted); letter-spacing: .08em; margin-top: 5px; }
+
+/* ── Captain hub ── */
+.cap-name { font-size: clamp(.85rem,2.5vw,1.4rem); color: var(--gold); text-shadow: 0 0 20px rgba(201,168,76,.5), 2px 2px 0 #1a0800; }
+.room-label { font-size: clamp(.65rem,1.8vw,.95rem); color: var(--gold2); margin: 4px 0 10px; }
+.knight-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
+.knight-chip {
+  padding: 6px 12px; border-radius: 3px; font-size: .55rem;
+  border: 2px solid var(--c, var(--border2)); color: var(--c, var(--text));
+  background: color-mix(in srgb, var(--c, transparent) 15%, var(--panel2));
+}
+
+/* Room scene */
+/* ── Room Scene ── */
+.room-scene {
+  position: relative; height: 220px; max-width: 580px; margin: 10px auto 12px;
+  border: 2px solid var(--border2); border-radius: 4px; overflow: hidden;
+  box-shadow: inset 0 0 40px rgba(0,0,0,.75), 0 0 24px rgba(0,0,0,.35);
+}
+/* default stone wall */
+.room-scene::before {
+  content: ''; position: absolute; inset: 0 0 38%; pointer-events: none; z-index: 0;
+}
+/* default floor */
+.room-scene::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 38%; pointer-events: none; z-index: 0;
+}
+
+/* ── Per-room wall & floor backgrounds ── */
+
+/* Writing Chamber — warm amber parchment stone */
+.room-writing { background: linear-gradient(180deg,#281600 0%,#1e1205 62%,#140e04 63%); }
+.room-writing::before { background:
+  repeating-linear-gradient(90deg,rgba(0,0,0,.13) 0 2px,transparent 2px 56px),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 2px,transparent 2px 30px),
+  linear-gradient(180deg,#2e1c08,#1e1205); }
+.room-writing::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 28px,rgba(0,0,0,.18) 28px 30px),
+  linear-gradient(180deg,#2c1d0e,#0d0906); }
+
+/* Drawing Quarters — dusty rose-grey */
+.room-drawing { background: linear-gradient(180deg,#1a1520 0%,#130f1a 62%,#0d0b12 63%); }
+.room-drawing::before { background:
+  repeating-linear-gradient(90deg,rgba(180,140,200,.04) 0 2px,transparent 2px 52px),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 2px,transparent 2px 28px),
+  linear-gradient(180deg,#221a2c,#130f1a); }
+.room-drawing::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 24px,rgba(0,0,0,.16) 24px 26px),
+  linear-gradient(180deg,#1e1628,#0b0910); }
+
+/* Council Chamber — deep crimson stone */
+.room-deliberation { background: linear-gradient(180deg,#1a0808 0%,#130505 62%,#0a0303 63%); }
+.room-deliberation::before { background:
+  repeating-linear-gradient(90deg,rgba(0,0,0,.18) 0 2px,transparent 2px 60px),
+  repeating-linear-gradient(0deg,rgba(255,100,100,.03) 0 2px,transparent 2px 32px),
+  linear-gradient(180deg,#220808,#130505); }
+.room-deliberation::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 30px,rgba(0,0,0,.2) 30px 32px),
+  linear-gradient(180deg,#1c0808,#080303); }
+
+/* Opinion Hall — ivory marble pillars */
+.room-opinion { background: linear-gradient(180deg,#1c1812 0%,#141008 62%,#0e0c06 63%); }
+.room-opinion::before { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 2px,transparent 2px 48px),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 2px,transparent 2px 26px),
+  linear-gradient(180deg,#221e14,#141008); }
+.room-opinion::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 26px,rgba(0,0,0,.15) 26px 28px),
+  linear-gradient(180deg,#1e1a12,#090806); }
+
+/* Oath Mirror — dark teal enchanted */
+.room-bioscanner { background: linear-gradient(180deg,#030f10 0%,#020b0c 62%,#010708 63%); }
+.room-bioscanner::before { background:
+  repeating-linear-gradient(90deg,rgba(0,200,180,.04) 0 2px,transparent 2px 50px),
+  repeating-linear-gradient(0deg,rgba(0,255,220,.025) 0 2px,transparent 2px 28px),
+  linear-gradient(180deg,#041214,#020b0c); }
+.room-bioscanner::after { background:
+  repeating-linear-gradient(90deg,rgba(0,180,160,.03) 0 22px,rgba(0,0,0,.2) 22px 24px),
+  linear-gradient(180deg,#041010,#020808); }
+
+/* Crisis Council — urgent orange-red war room */
+.room-crisis { background: linear-gradient(180deg,#1c0800 0%,#150500 62%,#0c0300 63%); }
+.room-crisis::before { background:
+  repeating-linear-gradient(90deg,rgba(0,0,0,.15) 0 2px,transparent 2px 58px),
+  repeating-linear-gradient(0deg,rgba(255,120,0,.04) 0 2px,transparent 2px 30px),
+  linear-gradient(180deg,#220c00,#150500); }
+.room-crisis::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 28px,rgba(0,0,0,.2) 28px 30px),
+  linear-gradient(180deg,#1a0a02,#080400); }
+
+/* Cipher Relay — cold blue-grey */
+.room-checksum { background: linear-gradient(180deg,#04080f 0%,#030609 62%,#020408 63%); }
+.room-checksum::before { background:
+  repeating-linear-gradient(90deg,rgba(60,120,220,.05) 0 2px,transparent 2px 48px),
+  repeating-linear-gradient(0deg,rgba(100,160,255,.03) 0 2px,transparent 2px 26px),
+  linear-gradient(180deg,#060c18,#030609); }
+.room-checksum::after { background:
+  repeating-linear-gradient(90deg,rgba(80,120,200,.03) 0 24px,rgba(0,0,0,.2) 24px 26px),
+  linear-gradient(180deg,#050a14,#020406); }
+
+/* Apothecary Ward — verdant herbal green */
+.room-quarantine { background: linear-gradient(180deg,#030e04 0%,#020a03 62%,#010602 63%); }
+.room-quarantine::before { background:
+  repeating-linear-gradient(90deg,rgba(0,0,0,.14) 0 2px,transparent 2px 52px),
+  repeating-linear-gradient(0deg,rgba(80,200,80,.03) 0 2px,transparent 2px 28px),
+  linear-gradient(180deg,#061208,#020a03); }
+.room-quarantine::after { background:
+  repeating-linear-gradient(90deg,rgba(80,160,80,.03) 0 24px,rgba(0,0,0,.18) 24px 26px),
+  linear-gradient(180deg,#061008,#020604); }
+
+/* Royal Archive — deep library shadow */
+.room-blackbox { background: linear-gradient(180deg,#0c0612 0%,#080410 62%,#05020c 63%); }
+.room-blackbox::before { background:
+  repeating-linear-gradient(90deg,rgba(80,40,140,.05) 0 2px,transparent 2px 54px),
+  repeating-linear-gradient(0deg,rgba(120,60,200,.025) 0 2px,transparent 2px 28px),
+  linear-gradient(180deg,#100818,#080410); }
+.room-blackbox::after { background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 26px,rgba(0,0,0,.2) 26px 28px),
+  linear-gradient(180deg,#0e0614,#040208); }
+
+/* Royal Whisper — intimate warm gold */
+.room-royal-whisper { background: linear-gradient(180deg,#1e1608 0%,#160f05 62%,#0e0a04 63%); }
+.room-royal-whisper::before { background:
+  repeating-linear-gradient(90deg,rgba(201,168,76,.05) 0 2px,transparent 2px 52px),
+  repeating-linear-gradient(0deg,rgba(255,200,80,.025) 0 2px,transparent 2px 28px),
+  linear-gradient(180deg,#261c08,#160f05); }
+.room-royal-whisper::after { background:
+  repeating-linear-gradient(90deg,rgba(200,160,60,.03) 0 26px,rgba(0,0,0,.18) 26px 28px),
+  linear-gradient(180deg,#201406,#0c0804); }
+
+/* Dungeon Trial — pitch dark dripping stone */
+.room-dungeon-trial { background: linear-gradient(180deg,#060002 0%,#040001 62%,#020001 63%); }
+.room-dungeon-trial::before { background:
+  repeating-linear-gradient(90deg,rgba(0,0,0,.3) 0 2px,transparent 2px 44px),
+  repeating-linear-gradient(0deg,rgba(180,0,0,.04) 0 2px,transparent 2px 24px),
+  linear-gradient(180deg,#0a0103,#040001); }
+.room-dungeon-trial::after { background:
+  repeating-linear-gradient(90deg,rgba(60,0,0,.1) 0 22px,rgba(0,0,0,.28) 22px 24px),
+  linear-gradient(180deg,#080104,#020001); }
+
+/* Herald's Chain — royal blue herald hall */
+.room-herald-chain { background: linear-gradient(180deg,#060c1a 0%,#040a14 62%,#020710 63%); }
+.room-herald-chain::before { background:
+  repeating-linear-gradient(90deg,rgba(60,100,220,.05) 0 2px,transparent 2px 56px),
+  repeating-linear-gradient(0deg,rgba(80,120,255,.025) 0 2px,transparent 2px 30px),
+  linear-gradient(180deg,#0a1222,#040a14); }
+.room-herald-chain::after { background:
+  repeating-linear-gradient(90deg,rgba(60,80,180,.03) 0 26px,rgba(0,0,0,.22) 26px 28px),
+  linear-gradient(180deg,#08101c,#020508); }
+
+/* Throne Room — grand royal purple-gold */
+.room-throne-vote { background: linear-gradient(180deg,#140820 0%,#0e0518 62%,#090310 63%); }
+.room-throne-vote::before { background:
+  repeating-linear-gradient(90deg,rgba(155,89,182,.06) 0 2px,transparent 2px 58px),
+  repeating-linear-gradient(0deg,rgba(180,100,220,.03) 0 2px,transparent 2px 30px),
+  linear-gradient(180deg,#1c0c2c,#0e0518); }
+.room-throne-vote::after { background:
+  repeating-linear-gradient(90deg,rgba(140,80,200,.03) 0 28px,rgba(0,0,0,.22) 28px 30px),
+  linear-gradient(180deg,#160824,#060210); }
+
+.room-torch { position: absolute; top: 44px; font-size: 1.25rem; text-shadow: 0 0 14px var(--ember); animation: flicker 2.2s infinite; z-index: 2; }
+.room-torch.left { left: 8%; }
+.room-torch.right { right: 8%; animation-delay: .7s; }
+.rs-feature { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-52%); z-index: 2; text-align: center; pointer-events: none; }
+.rs-wall-l, .rs-wall-r { position: absolute; top: 0; bottom: 38%; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; pointer-events: none; }
+.rs-wall-l { left: 0; width: 18%; }
+.rs-wall-r { right: 0; width: 18%; }
+.rs-floor-items { position: absolute; left: 0; right: 0; bottom: 2px; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 6%; pointer-events: none; }
+.rs-glow { position: absolute; border-radius: 50%; pointer-events: none; z-index: 1; }
+.rs-bars { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 2; display: flex; gap: 11px; pointer-events: none; }
+.rs-bar { width: 5px; height: 72px; background: linear-gradient(180deg,#2a2a2a,#111); border-radius: 2px; box-shadow: inset 1px 0 0 rgba(255,255,255,.1); }
+.scene-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  display: flex; justify-content: space-between; gap: 8px; align-items: flex-end;
+  padding: 22px 12px 7px;
+  background: linear-gradient(0deg, rgba(0,0,0,.72) 0%, transparent 100%);
+}
+.scene-title { font-size: .5rem; color: var(--gold2); letter-spacing: .12em; text-transform: uppercase; }
+.scene-objective { font-size: .43rem; color: var(--muted); line-height: 1.6; text-align: right; max-width: 240px; }
+
+/* ── Scene figures (player tokens inside room) ── */
+.scene-figures { position: absolute; left: 0; right: 0; bottom: 28px; z-index: 5; display: flex; justify-content: center; gap: 16px; pointer-events: none; }
+.scene-figure { display: flex; flex-direction: column; align-items: center; gap: 2px; transition: all .3s; }
+.scene-figure-done { opacity: .3; filter: grayscale(.6); }
+.figure-dot { width: 14px; height: 14px; border-radius: 2px; transform: rotate(45deg); transition: all .3s; box-shadow: 0 3px 0 rgba(0,0,0,.5); }
+.scene-figure-active .figure-dot { animation: figPulse 1.1s ease-in-out infinite; }
+@keyframes figPulse { 0%,100%{transform:rotate(45deg) scale(1)} 50%{transform:rotate(45deg) scale(1.4);filter:brightness(1.6)} }
+.figure-label { font-size: .38rem; color: var(--text); text-shadow: 1px 1px 0 #000, -1px -1px 0 #000; letter-spacing: .04em; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; margin-top: 1px; }
+.scene-figure-active .figure-label { color: var(--ember); }
+.figure-status { font-size: .3rem; letter-spacing: .08em; color: var(--muted); }
+.scene-figure-active .figure-status { color: var(--ember); animation: blink 1.6s step-end infinite; }
+
+/* ── Room ambient tint ── */
+.room-tint {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 60%, var(--rt, transparent) 0%, transparent 68%);
+  animation: roomTintPulse 3s ease-in-out infinite;
+}
+@keyframes roomTintPulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+/* ── Captain drop-in ── */
+@keyframes capDrop {
+  0%   { opacity:0; transform: translateY(-32px) scale(.88); }
+  65%  { opacity:1; transform: translateY(5px) scale(1.04); }
+  100% { opacity:1; transform: none; }
+}
+.cap-drop { animation: capDrop .7s cubic-bezier(.22,.68,0,1.2) both; }
+
+/* ── Room entry countdown ── */
+@keyframes entryNumPop { 0%{opacity:0;transform:scale(1.4)} 100%{opacity:1;transform:scale(1)} }
+.entry-num {
+  font-size: clamp(3.5rem,12vw,7rem); color: var(--gold);
+  text-shadow: 0 0 60px rgba(201,168,76,.8), 4px 4px 0 #1a0800;
+  animation: entryNumPop .4s cubic-bezier(.22,.68,0,1.15) both;
+}
+.room-writing { background-color: #1a1108; }
+.room-drawing { background-color: #15110c; }
+.room-deliberation { background-color: #17120b; }
+.room-opinion { background-color: #1b100f; }
+.room-bioscanner { background-color: #10170f; }
+.room-crisis { background-color: #1e0d08; }
+.room-checksum { background-color: #10131a; }
+.room-quarantine { background-color: #10170c; }
+.room-blackbox { background-color: #0d0b13; }
+
+/* ── Trial in progress ── */
+.trial-wrap { text-align: center; width: 100%; }
+.trial-banner {
+  display: inline-block; padding: 12px 24px;
+  background: var(--panel2); border-radius: 4px;
+  border: 2px solid var(--ember);
+  box-shadow: 0 0 0 1px #3a1a00, 0 0 30px rgba(232,131,42,.25);
+  margin-bottom: 14px; position: relative; overflow: hidden;
+}
+.trial-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 8px, rgba(232,131,42,.04) 8px, rgba(232,131,42,.04) 9px);
+  animation: scanMove 2s linear infinite;
+}
+@keyframes scanMove { from{background-position:0 0} to{background-position:100px 0} }
+.trial-room-name { font-size: clamp(.6rem,1.8vw,.85rem); color: var(--gold); letter-spacing: .12em; }
+@keyframes trialPulse { 0%,100%{box-shadow:0 0 0 1px #3a1a00,0 0 20px rgba(232,131,42,.2)} 50%{box-shadow:0 0 0 1px #3a1a00,0 0 40px rgba(232,131,42,.5)} }
+.trial-banner { animation: trialPulse 2.2s ease-in-out infinite; }
+
+.testee-row  { display: flex; gap: 12px; justify-content: center; margin: 12px 0; flex-wrap: wrap; }
+.testee-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: var(--panel); border: 2px solid var(--border2); border-radius: 4px;
+  padding: 10px 14px; min-width: 88px; transition: all .3s;
+}
+.testee-card.active {
+  border-color: var(--ember);
+  box-shadow: 0 0 16px rgba(232,131,42,.4);
+  background: rgba(232,131,42,.06);
+}
+.testee-card.done  { opacity: .45; }
+.testee-pip { width: 10px; height: 10px; border-radius: 2px; transform: rotate(45deg); }
+.testee-status { font-size: .45rem; letter-spacing: .05em; }
+
+/* ── Room ring ── */
+.room-ring-wrap { position: relative; width: 72px; height: 72px; margin: 8px auto; }
+.room-ring-wrap svg { transform: rotate(-90deg); }
+.ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(.7rem,2vw,.95rem); color: var(--gold); }
+
+/* ── Input hidden ── */
+.hidden-banner {
+  font-size: .55rem; letter-spacing: .12em; color: var(--muted);
+  padding: 6px 12px; border-top: 1px dashed var(--border2); margin-top: 10px;
+  animation: blink 1.8s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:.7} 50%{opacity:.25} }
+
+/* ── Room Guide ── */
+.room-guide {
+  margin: 10px 0; border: 1px solid var(--border2); border-radius: 3px;
+  background: var(--panel2); overflow: hidden;
+}
+.guide-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid transparent; transition: border-color .2s;
+}
+.guide-header:hover { border-bottom-color: var(--border2); background: var(--panel3); }
+.guide-row {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 6px 12px; border-left: 2px solid var(--border2);
+  margin: 4px 10px; font-size:.44rem; line-height:1.8;
+}
+.guide-label { color:var(--muted); min-width:70px; letter-spacing:.06em; }
+.guide-val { color:var(--text); flex:1; }
+
+/* ── Reveal ── */
+.reveal-entry {
+  display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px;
+  border-radius: 3px; border: 1px solid var(--border2);
+  background: var(--panel2); margin-bottom: 7px;
+  opacity: 0; transform: translateX(-12px);
+  transition: opacity .5s ease, transform .5s ease;
+}
+.reveal-entry.shown { opacity: 1; transform: none; }
+.entry-gem { width: 10px; height: 10px; border-radius: 2px; transform: rotate(45deg); flex-shrink: 0; margin-top: 3px; }
+.entry-name { font-size: .55rem; font-weight: 700; color: var(--gold2); margin-bottom: 3px; }
+.entry-answer { font-size: .6rem; line-height: 1.8; }
+.reveal-tag { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: .45rem; margin-left: 6px; vertical-align: middle; }
+.tag-k { background: #0a2010; color: var(--green2); border: 1px solid var(--green2); }
+.tag-i { background: #1a0a24; color: var(--purple2); border: 1px solid var(--purple2); }
+.human-prompt { font-size: .52rem; color: var(--muted); background: #0a0806; border-left: 3px solid var(--gold); padding: 7px 11px; border-radius: 0 3px 3px 0; margin-top: 8px; line-height: 1.8; }
+.scroll-area { max-height: 45vh; overflow-y: auto; }
+
+/* ── Extraction ── */
+.extraction-wrap { text-align: center; }
+.alarm-title { font-size: clamp(.8rem,2.5vw,1.4rem); color: var(--red2); text-shadow: 0 0 20px rgba(192,57,43,.7), 2px 2px 0 #000; letter-spacing: .12em; animation: alarmPulse 1s infinite; }
+@keyframes alarmPulse { 0%,100%{text-shadow:0 0 12px rgba(192,57,43,.5),2px 2px 0 #000} 50%{text-shadow:0 0 30px rgba(192,57,43,1),2px 2px 0 #000} }
+.alarm-accuser { font-size: .6rem; color: var(--ember); margin: 6px 0 12px; }
+.suspects-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
+.suspect-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 14px; min-width: 85px; border-radius: 4px;
+  background: rgba(139,26,26,.2); border: 2px solid var(--red2);
+  box-shadow: 0 0 18px rgba(192,57,43,.35); position: relative; overflow: hidden;
+}
+/* CSS dungeon bars */
+.suspect-cell::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,.55) 0, rgba(0,0,0,.55) 5px, transparent 5px, transparent 18px);
+  pointer-events: none;
+}
+.suspect-name { font-size: .5rem; color: #fff; position: relative; z-index: 1; }
+.suspect-pip  { width: 10px; height: 10px; border-radius: 2px; transform: rotate(45deg); position: relative; z-index: 1; }
+.votes-label { font-size: .5rem; color: var(--muted); margin-top: 8px; }
+.votes-grid  { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.vote-chip   { padding: 4px 8px; border-radius: 3px; font-size: .45rem; border: 1px solid; }
+.vote-yes { background: rgba(74,158,107,.2); border-color: var(--green2); color: var(--green2); }
+.vote-no  { background: rgba(192,57,43,.2); border-color: var(--red2); color: var(--red2); }
+
+/* ── Game over ── */
+.go-banner { font-size: clamp(1rem,3.5vw,2rem); text-shadow: 2px 2px 0 #000; letter-spacing: .1em; margin-bottom: 10px; }
+.human-win { color: var(--green2); text-shadow: 0 0 30px rgba(74,158,107,.6), 2px 2px 0 #000; }
+.alien-win { color: var(--purple2); text-shadow: 0 0 30px rgba(155,89,182,.6), 2px 2px 0 #000; }
+.roles-grid { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+.role-chip  { padding: 6px 12px; border-radius: 3px; border: 1px solid; font-size: .5rem; text-align: center; }
+.role-k { border-color: var(--border2); background: var(--panel2); }
+.role-i { border-color: var(--purple2); background: rgba(91,45,138,.15); }
+
+/* ── Buttons ── */
+.btn { cursor: pointer; border: none; border-radius: 4px; font-family: var(--px); font-size: .55rem; padding: 9px 16px; transition: all .1s; letter-spacing: 1px; }
+.btn-gold { background: linear-gradient(180deg,#c9a84c,#7a5c1e); color: #1a0d00; border: 2px solid var(--gold2); box-shadow: 0 3px 0 #3a2000; }
+.btn-gold:hover  { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-gold:active { transform: translateY(1px); box-shadow: 0 1px 0 #3a2000; }
+.btn-red  { background: linear-gradient(180deg,#c0392b,#7a1515); color: #fff; border: 2px solid #e74c3c; box-shadow: 0 3px 0 #3a0000; }
+.btn-red:hover   { filter: brightness(1.1); }
+.btn-ghost{ background: transparent; border: 2px solid var(--border2); color: var(--muted); }
+.btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+.btn-row  { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+
+/* ── Sidebar ── */
+#probe-wrap { flex: 1; display: flex; flex-direction: column; padding: 8px; min-height: 0; overflow: hidden; }
+#probe-list { flex: 1; overflow-y: auto; margin-top: 4px; display: flex; flex-direction: column; gap: 5px; }
+.probe-card { background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; padding: 7px 8px; font-size: .48rem; }
+.probe-room { color: var(--gold2); margin-bottom: 3px; }
+.probe-row  { display: flex; gap: 4px; line-height: 1.7; color: var(--muted); }
+.probe-name { color: var(--text); min-width: 52px; flex-shrink: 0; }
+#qr-wrap    { padding: 8px; text-align: center; }
+#qr-box     { background: #fff; padding: 5px; border-radius: 2px; border: 2px solid var(--gold); display: inline-block; }
+#join-url   { font-size: .42rem; color: var(--muted); margin-top: 4px; word-break: break-all; }
+
+/* ── Roster ── */
+.roster-pill {
+  display: flex; align-items: center; gap: 5px; padding: 4px 9px;
+  background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; font-size: .48rem;
+  transition: border-color .2s;
+}
+.roster-pip  { width: 8px; height: 8px; border-radius: 1px; transform: rotate(45deg); flex-shrink: 0; }
+.roster-pill.cap-mark  { border-color: var(--gold); }
+.roster-pill.dead      { opacity: .3; text-decoration: line-through; }
+.roster-pill.testing   { border-color: var(--ember); }
+.roster-label { font-size: .45rem; color: var(--muted); margin-right: 4px; }
+
+/* ── Scroll ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Connecting overlay ── */
+#connecting { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 14px; }
+#connecting.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Atmosphere -->
+<div id="embers"></div>
+<div id="alert-overlay"></div>
+
+<!-- ── Room entry countdown ─────────────────────────────────── -->
+<div id="room-entry-overlay" style="display:none;position:fixed;inset:0;z-index:9996;background:rgba(7,5,13,.88);flex-direction:column;align-items:center;justify-content:center;gap:10px">
+  <div style="font-size:.5rem;color:var(--muted);letter-spacing:.25em">ENTERING CHAMBER</div>
+  <div class="entry-num" id="entry-num">3</div>
+  <div id="entry-room-name" style="font-size:.55rem;color:var(--ember);letter-spacing:.18em;margin-top:4px"></div>
+</div>
+
+<!-- ── Hex placed flash ──────────────────────────────────────── -->
+<div id="hex-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:9995;pointer-events:none;align-items:center;justify-content:center;transition:opacity .45s">
+  <div style="background:rgba(30,10,50,.94);border:2px solid var(--purple2);border-radius:6px;padding:22px 42px;text-align:center;box-shadow:0 0 50px rgba(155,89,182,.7),inset 0 0 20px rgba(155,89,182,.1)">
+    <div style="font-size:1.6rem;margin-bottom:6px;animation:flicker 1.2s ease-in-out infinite">⬡</div>
+    <div style="font-size:.75rem;color:var(--purple2);letter-spacing:.18em">HEX PLACED</div>
+    <div style="font-size:.45rem;color:var(--muted);margin-top:5px;letter-spacing:.1em">A dark art has been cast upon a knight</div>
+  </div>
+</div>
+
+<!-- ── All chambers sealed banner ───────────────────────────── -->
+<div id="sealed-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:9994;pointer-events:none;align-items:center;justify-content:center;transition:opacity .7s;background:rgba(7,5,13,.72)">
+  <div style="text-align:center;padding:24px 40px;border:1px solid var(--border2);border-radius:4px;background:rgba(26,18,8,.9);box-shadow:0 0 40px rgba(201,168,76,.12)">
+    <div style="font-size:clamp(.7rem,2.5vw,1.1rem);color:var(--gold);letter-spacing:.22em;text-shadow:0 0 30px rgba(201,168,76,.6),2px 2px 0 #000">ALL CHAMBERS SEALED</div>
+    <div style="font-size:.48rem;color:var(--muted);letter-spacing:.14em;margin-top:8px">The court prepares to review testimonies…</div>
+  </div>
+</div>
+
+<!-- ── Toast notification ────────────────────────────────────── -->
+<div id="toast" style="position:fixed;top:58px;left:50%;transform:translateX(-50%) translateY(-10px);opacity:0;z-index:9993;pointer-events:none;background:rgba(26,18,8,.96);border:1px solid var(--border2);border-radius:3px;padding:5px 14px;font-size:.46rem;letter-spacing:.12em;transition:opacity .25s,transform .25s;white-space:nowrap"></div>
+
+<!-- Connecting overlay -->
+<div id="connecting">
+  <div class="torch">🔥</div>
+  <div style="font-size:.65rem;color:var(--gold);letter-spacing:.15em">⚔ PUSH THE BUTTON</div>
+  <div style="font-size:.5rem;color:var(--muted)">Connecting to war room…</div>
+</div>
+
+<div id="wrap">
+  <!-- Top bar -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="torch">🔥</span>
+      <h1>PUSH THE BUTTON</h1>
+      <span class="torch" style="animation-delay:.7s">🔥</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <span id="round-badge">ROUND —</span>
+      <div>
+        <div class="label" style="margin-bottom:2px">QUEST TIMER</div>
+        <div style="display:flex;align-items:center">
+          <div id="timer-track"><div id="timer-fill" style="width:100%"></div></div>
+          <span id="timer-label">—:——</span>
+        </div>
+      </div>
+      <span id="test-badge" style="display:none;font-size:.42rem;color:var(--purple2);border:1px solid var(--purple2);border-radius:3px;padding:2px 7px;letter-spacing:.1em">🧪 TEST</span>
+      <button class="restart-btn" onclick="emergencyRestart()">Restart</button>
+      <button class="restart-btn" style="border-color:var(--red2);color:var(--red2)" onclick="shutdownServer()">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="center">
+      <div id="center-panel">
+        <div id="phase-content"></div>
+      </div>
+    </div>
+    <div id="sidebar">
+      <!-- Probe history -->
+      <div class="stone" style="flex:1;display:flex;flex-direction:column;padding:0;min-height:0;overflow:hidden">
+        <div id="probe-wrap">
+          <div class="label">📜 Tome of Evidence</div>
+          <div id="probe-list"><p style="font-size:.45rem;color:var(--muted)">No evidence yet.</p></div>
+        </div>
+      </div>
+      <!-- QR -->
+      <div class="stone" id="qr-wrap">
+        <div class="label" style="margin-bottom:6px">⚔ PLAYERS JOIN AT</div>
+        <div id="qr-box"><div id="qr"></div></div>
+        <div id="join-url"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player roster -->
+  <div id="playerbar">
+    <span class="roster-label">KNIGHTS:</span>
+    <div id="roster-pills" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ── Ember particles ────────────────────────────────────────────────
+(function spawnEmbers() {
+  const container = document.getElementById('embers');
+  for (let i = 0; i < 22; i++) {
+    const e = document.createElement('div');
+    e.className = 'ember';
+    const x = Math.random() * 100;
+    const dx = (Math.random() - .5) * 60;
+    const dur = 6 + Math.random() * 8;
+    const delay = Math.random() * 10;
+    e.style.cssText = `left:${x}%;bottom:-4px;--dur:${dur}s;--delay:${delay}s;--dx:${dx}px;`;
+    // Vary color: gold/ember/white
+    const colors = ['#e8832a','#c9a84c','#f0d070','#fff8e0'];
+    e.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const size = 1.5 + Math.random() * 3;
+    e.style.width = e.style.height = size + 'px';
+    container.appendChild(e);
+  }
+})();
+
+// ── QR ─────────────────────────────────────────────────────────────
+// Fetch the real LAN IP from server — window.location may show localhost
+fetch('/api/info')
+  .then(r => r.json())
+  .then(({ lanUrl }) => {
+    document.getElementById('join-url').textContent = lanUrl;
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(document.getElementById('qr'), { text: lanUrl, width: 84, height: 84, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+    }
+  })
+  .catch(() => {
+    // Fallback to window.location if fetch fails
+    const fallback = window.location.origin;
+    document.getElementById('join-url').textContent = fallback;
+  });
+
+// ── SSE ─────────────────────────────────────────────────────────────
+const S = {}; let prevPhase = null, lastRevealKey = '';
+let prevHackCount = 0, lastRoomTesteeIdx = -1, prevDungeonAnswerCount = 0;
+const esc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function connect() {
+  const es = new EventSource('/events?type=host');
+  es.addEventListener('state', e => {
+    const d = JSON.parse(e.data);
+    const phaseChanged = d.phase && d.phase !== S.phase;
+    Object.assign(S, d);
+    render(phaseChanged);
+    document.getElementById('connecting').classList.add('hidden');
+  });
+  es.addEventListener('tick', e => {
+    const d = JSON.parse(e.data);
+    if (d.ship !== undefined) { S.shipTimerLeft = d.ship; S.shipTimerMax = d.shipMax || S.shipTimerMax; updateTimer(); }
+    if (d.room !== undefined) { S.roomTimerLeft = d.room; updateRing(); }
+  });
+  es.addEventListener('shutdown', () => { es.close(); });
+  es.onerror = () => setTimeout(connect, 2000);
+}
+connect();
+
+function act(type, data = {}) {
+  fetch('/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, data, player: '__host__' }) });
+}
+
+// ── Timer ────────────────────────────────────────────────────────────
+function updateTimer() {
+  const l = S.shipTimerLeft || 0, m = S.shipTimerMax || 1;
+  const pct = l / m * 100;
+  const fill = document.getElementById('timer-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct > 50 ? 'var(--gold)' : pct > 25 ? 'var(--ember)' : 'var(--red2)';
+  const min = Math.floor(l / 60), sec = l % 60;
+  document.getElementById('timer-label').textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+  document.getElementById('timer-label').style.color = pct > 25 ? 'var(--gold)' : 'var(--red2)';
+}
+
+function updateRing() {
+  const ring = document.getElementById('dyn-ring');
+  const txt  = document.getElementById('dyn-ring-txt');
+  if (!ring || !txt) return;
+  const MAXES = { writing:30,drawing:35,deliberation:20,opinion:15,bioscanner:40,crisis:35,checksum:35,quarantine:35,blackbox:30 };
+  const l = S.roomTimerLeft || 0;
+  const max = MAXES[S.selectedRoom] || 30;
+  const circ = 2 * Math.PI * 26;
+  ring.style.strokeDashoffset = circ * (1 - l / max);
+  ring.style.stroke = l / max > .5 ? 'var(--gold)' : l / max > .25 ? 'var(--ember)' : 'var(--red2)';
+  txt.textContent = l;
+  txt.style.color = l <= 5 ? 'var(--red2)' : 'var(--gold)';
+}
+
+// ── Alert flash ──────────────────────────────────────────────────────
+function flashAlert(on) {
+  const el = document.getElementById('alert-overlay');
+  if (on) el.classList.add('alert-active');
+  else     el.classList.remove('alert-active');
+}
+
+// ── Render ───────────────────────────────────────────────────────────
+function render(phaseChanged = false) {
+  updateTimer();
+  document.getElementById('round-badge').textContent = S.round ? `ROUND ${S.round}` : 'ROUND —';
+  document.getElementById('test-badge').style.display = S.testMode ? '' : 'none';
+  renderRoster();
+  renderProbe();
+
+  // ── Effect triggers (before DOM update so we can compare) ──
+  // 1. Alien hex placed
+  const hackCount = Object.keys(S.activeHacks || {}).length;
+  if (hackCount > prevHackCount) showHexFlash();
+  prevHackCount = hackCount;
+
+  // 2. Answer received toast
+  const curTesteeIdx = S.roomTesteeIdx || 0;
+  if (['room-waiting','room-active'].includes(S.phase) && S.selectedRoom !== 'dungeon-trial' && curTesteeIdx > lastRoomTesteeIdx && lastRoomTesteeIdx >= 0) {
+    const submitter = S.selectedTestees?.[lastRoomTesteeIdx];
+    if (submitter) showToast(`✓ ${submitter} answered`, 'var(--green2)');
+  }
+  // Dungeon: toast when answer count increases
+  const dungeonAnswerCount = S.dungeon?.answerCount || 0;
+  if (S.phase === 'room-active' && S.selectedRoom === 'dungeon-trial' && dungeonAnswerCount > (prevDungeonAnswerCount||0) && (prevDungeonAnswerCount||0) >= 0) {
+    showToast(`⚔ ${dungeonAnswerCount}/${(S.selectedTestees||[]).length} answered`, 'var(--gold)');
+  }
+  prevDungeonAnswerCount = (S.phase === 'room-active' && S.selectedRoom === 'dungeon-trial') ? dungeonAnswerCount : 0;
+  lastRoomTesteeIdx = ['room-waiting','room-active'].includes(S.phase) ? curTesteeIdx : -1;
+
+  const el = document.getElementById('phase-content');
+  let html = '';
+  switch (S.phase) {
+    case 'lobby':      html = renderLobby(); break;
+    case 'role-reveal':html = renderRoleReveal(); break;
+    case 'captain-hub':html = renderCaptainHub(); break;
+    case 'room-waiting':
+    case 'room-active':
+      if (S.selectedRoom==='dungeon-trial') html = renderDungeonTrial();
+      else if (S.selectedRoom==='herald-chain') html = renderHeraldChain();
+      else if (S.selectedRoom==='throne-vote') html = renderThroneVote();
+      else html = renderTrial();
+      break;
+    case 'dungeon-goblet': html = renderDungeonGoblet(); break;
+    case 'dungeon-reveal': html = renderDungeonReveal(); break;
+    case 'reveal':     html = S.selectedRoom==='throne-vote' ? renderThroneReveal() : renderReveal(); break;
+    case 'extraction': html = renderExtraction(); break;
+    case 'gameover':   html = renderGameover(); break;
+    default:           html = '<p class="label center-text">Awaiting connection…</p>';
+  }
+  el.innerHTML = `<div class="phase-in">${html}</div>`;
+
+  // ── Phase transition effects (after DOM update) ──
+  if (phaseChanged) {
+    // 3. Room entry countdown
+    if (S.phase === 'room-waiting') setTimeout(showRoomEntry, 80);
+    // 4. Captain drop-in
+    if (S.phase === 'captain-hub') setTimeout(() => document.querySelector('.cap-name')?.classList.add('cap-drop'), 60);
+    // 5. All chambers sealed banner
+    if (S.phase === 'reveal') setTimeout(showSealedBanner, 80);
+    // 6. Dungeon entry
+    if (S.phase === 'room-active' && S.selectedRoom === 'dungeon-trial') setTimeout(showRoomEntry, 80);
+  }
+  prevPhase = S.phase;
+
+  // Trigger staggered reveal animation
+  if (S.phase === 'reveal') {
+    const key = `${S.round}:${S.probeHistory?.length || 0}`;
+    if (key !== lastRevealKey) { lastRevealKey = key; scheduleReveal(); }
+    else document.querySelectorAll('.reveal-entry').forEach(el => el.classList.add('shown'));
+  }
+
+  // Alert flash for extraction
+  flashAlert(S.phase === 'extraction');
+
+  // Update ring after DOM settles
+  setTimeout(updateRing, 60);
+}
+
+// ── Lobby ─────────────────────────────────────────────────────────────
+function renderLobby() {
+  const players = S.players || [];
+  const banners = players.map(p => {
+    const [r, g, b] = hexToRgb(p.color);
+    return `<div class="lobby-banner connected" style="--color:${p.color};--color-r:${r};--color-g:${g};--color-b:${b};border-color:${p.color}">
+      <svg class="shield" viewBox="0 0 24 28"><path d="M12 1 L23 5 L23 16 Q23 24 12 27 Q1 24 1 16 L1 5 Z" fill="${p.color}" opacity=".25" stroke="${p.color}" stroke-width="1.5"/><text x="12" y="17" text-anchor="middle" font-size="9" fill="${p.color}" font-family="serif">✦</text></svg>
+      <div class="banner-name" style="color:${p.color}">${esc(p.name)}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="center-text">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px">
+      <span class="torch" style="font-size:1.6rem">🔥</span>
+      <div class="phase-title" style="color:var(--gold)">AWAITING WARRIORS</div>
+      <span class="torch" style="font-size:1.6rem;animation-delay:.6s">🔥</span>
+    </div>
+    <div class="phase-sub">Players join via the QR code →</div>
+    <div class="lobby-grid">${banners || '<p style="color:var(--muted);font-size:.55rem;margin:20px 0">No warriors yet… scan the QR code</p>'}</div>
+    <p style="font-size:.52rem;color:var(--muted);margin-bottom:16px">
+      ${players.length}/10 joined${players.length < 4 ? ' — need at least 4' : ''}
+    </p>
+    <button class="btn btn-gold" ${players.length >= 4 ? '' : 'disabled'} onclick="act('start-game')">
+      ${players.length >= 4 ? '⚔  BEGIN THE QUEST  ⚔' : 'Awaiting more warriors…'}
+    </button>
+    <div style="margin-top:14px;border-top:1px solid var(--border2);padding-top:14px">
+      <p style="font-size:.45rem;color:var(--muted);margin-bottom:8px;letter-spacing:.08em">SOLO TESTING</p>
+      <button class="btn btn-ghost" style="border-color:var(--purple2);color:var(--purple2);font-size:.48rem;padding:8px 18px;width:auto" onclick="act('test-mode')">
+        🧪 Test Mode — fill bots &amp; start
+      </button>
+      <p style="font-size:.42rem;color:var(--muted);margin-top:6px">Adds bot players so you can test every room alone</p>
+    </div>
+    ${players.length > 0 ? `
+    <div style="margin-top:10px">
+      <button class="btn btn-ghost" style="font-size:.48rem;padding:7px 14px;width:auto" onclick="fullReset()">
+        ↺ Reset &amp; clear all players
+      </button>
+    </div>` : ''}
+  </div>`;
+}
+
+// ── Role reveal ───────────────────────────────────────────────────────
+function renderRoleReveal() {
+  return `<div class="center-text">
+    <div class="phase-kicker">Secret phase</div>
+    <div class="phase-title" style="color:var(--purple2)">DESTINY IS REVEALED</div>
+    <div style="font-size:2.2rem;margin:18px 0">🔥&nbsp;&nbsp;🗡️&nbsp;&nbsp;🌑&nbsp;&nbsp;🗡️&nbsp;&nbsp;🔥</div>
+    <p style="font-size:.58rem;color:var(--muted);max-width:340px;margin:0 auto 18px;line-height:2.2">
+      Pass the device around the table.<br>Each knight views their role in secret.
+    </p>
+    <button class="btn btn-gold" onclick="act('roles-done')">All roles seen — begin quest ›</button>
+  </div>`;
+}
+
+// ── Captain hub ───────────────────────────────────────────────────────
+function renderSceneFigures(testees, curIdx) {
+  if (!testees || !testees.length) return '';
+  return `<div class="scene-figures">${testees.map((name, i) => {
+    const pl = (S.players || []).find(p => p.name === name);
+    const isActive = i === curIdx && S.phase === 'room-active';
+    const isDone = curIdx >= 0 && i < curIdx;
+    return `<div class="scene-figure${isActive ? ' scene-figure-active' : ''}${isDone ? ' scene-figure-done' : ''}">
+      <div class="figure-dot" style="background:${pl?.color || '#888'}"></div>
+      <div class="figure-label">${esc(name)}</div>
+      <div class="figure-status">${isActive ? 'TRIAL' : isDone ? 'DONE' : 'READY'}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderRoomScene(roomId, objective = '', figuresHtml = '') {
+  const R = {
+    writing:{
+      name:'Writing Chamber',obj:'Write a court answer',
+      glow:'rgba(201,168,76,.22)',torch:'#f0d070',
+      wallL:`<div style="font-size:.9rem;opacity:.5">📚</div><div style="font-size:.8rem;opacity:.42">📚</div><div style="font-size:.75rem;opacity:.32">📜</div>`,
+      wallR:`<div style="font-size:.85rem;opacity:.46">📚</div><div style="font-size:.9rem;opacity:.5">📚</div><div style="font-size:.75rem;opacity:.3">📜</div>`,
+      feat:`<div style="font-size:.45rem;color:rgba(201,168,76,.4);letter-spacing:5px;margin-bottom:3px">— — — — —</div>
+            <div style="font-size:2.9rem;filter:drop-shadow(0 4px 16px rgba(201,168,76,.5))">📜</div>
+            <div style="font-size:1.4rem;margin-top:-8px">✒️</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">🕯️</span><span style="font-size:1.1rem;opacity:.35">📜</span><span style="font-size:1rem;opacity:.4">🕯️</span>`,
+    },
+    drawing:{
+      name:'Drawing Quarters',obj:'Draw the hidden prompt',
+      glow:'rgba(180,130,220,.2)',torch:'#c8a0e8',
+      wallL:`<div style="font-size:1.05rem;opacity:.48">🖼️</div><div style="font-size:.85rem;opacity:.35">🖼️</div>`,
+      wallR:`<div style="font-size:1rem;opacity:.45">🖼️</div><div style="font-size:.88rem;opacity:.38">🎨</div>`,
+      feat:`<div style="font-size:2.5rem;filter:drop-shadow(0 4px 12px rgba(180,130,220,.45))">🖼️</div>
+            <div style="font-size:.38rem;color:rgba(200,160,255,.5);letter-spacing:.15em;margin-top:4px">CANVAS AWAITS</div>
+            <div style="font-size:1.3rem;margin-top:4px;opacity:.65">🎨 🪶</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">🎨</span><span style="font-size:1.1rem;opacity:.4">🖌️</span><span style="font-size:1rem;opacity:.35">🪶</span>`,
+    },
+    deliberation:{
+      name:'Council Chamber',obj:'Choose under pressure',
+      glow:'rgba(200,50,50,.28)',torch:'#e85030',
+      wallL:`<div style="font-size:1.3rem;opacity:.5">🏴</div><div style="font-size:1rem;opacity:.38">⚔️</div>`,
+      wallR:`<div style="font-size:1.3rem;opacity:.5">🏴</div><div style="font-size:1rem;opacity:.38">🛡️</div>`,
+      feat:`<div style="font-size:2.9rem;filter:drop-shadow(0 6px 20px rgba(220,50,50,.6))">⚖️</div>
+            <div style="font-size:.38rem;color:rgba(255,140,80,.6);letter-spacing:.18em;margin-top:4px">JUDGEMENT FALLS HERE</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">⚔️</span><span style="font-size:1.1rem;opacity:.42">👑</span><span style="font-size:1rem;opacity:.4">⚔️</span>`,
+    },
+    opinion:{
+      name:'Opinion Hall',obj:'Reveal suspicious values',
+      glow:'rgba(220,200,100,.18)',torch:'#e8d070',
+      wallL:`<div style="font-size:1.1rem;opacity:.42">🏛️</div><div style="font-size:.9rem;opacity:.35">🏛️</div>`,
+      wallR:`<div style="font-size:1.1rem;opacity:.42">🏛️</div><div style="font-size:.9rem;opacity:.35">🏛️</div>`,
+      feat:`<div style="font-size:2.6rem;filter:drop-shadow(0 4px 14px rgba(220,200,80,.4))">📢</div>
+            <div style="font-size:.38rem;color:rgba(220,200,80,.55);letter-spacing:.15em;margin-top:4px">SPEAK THY MIND</div>
+            <div style="font-size:1rem;margin-top:4px;opacity:.6">⚜️ ⚜️</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.35">🏛️</span><span style="font-size:1.1rem;opacity:.4">🗣️</span><span style="font-size:.9rem;opacity:.35">🏛️</span>`,
+    },
+    bioscanner:{
+      name:'Oath Mirror',obj:'Match the sacred seals',
+      glow:'rgba(0,220,180,.3)',torch:'#00deb0',
+      wallL:`<div style="font-size:.85rem;opacity:.35;color:#00deb0">✦</div><div style="font-size:.7rem;opacity:.3;color:#00deb0">✧</div><div style="font-size:.9rem;opacity:.28;color:#00deb0">◆</div>`,
+      wallR:`<div style="font-size:.85rem;opacity:.35;color:#00deb0">✦</div><div style="font-size:.7rem;opacity:.3;color:#00deb0">✧</div><div style="font-size:.9rem;opacity:.28;color:#00deb0">◆</div>`,
+      feat:`<div style="position:relative;display:inline-block">
+        <div style="position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,220,180,.38) 0%,transparent 70%);animation:roomTintPulse 2s ease-in-out infinite"></div>
+        <div style="font-size:3.2rem;filter:drop-shadow(0 0 20px rgba(0,220,180,.75))">🪞</div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(0,220,180,.7);letter-spacing:.18em;margin-top:8px">REVEAL THY TRUTH</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.4">💎</span><span style="font-size:1rem;opacity:.42">🔔</span><span style="font-size:.9rem;opacity:.4">💎</span>`,
+    },
+    crisis:{
+      name:'Crisis Council',obj:'Rank the castle crisis',
+      glow:'rgba(240,100,0,.3)',torch:'#ff6010',
+      wallL:`<div style="font-size:1rem;opacity:.5">⚔️</div><div style="font-size:1.1rem;opacity:.46">🛡️</div>`,
+      wallR:`<div style="font-size:1rem;opacity:.5">⚔️</div><div style="font-size:1.1rem;opacity:.46">🛡️</div>`,
+      feat:`<div style="font-size:.38rem;color:rgba(255,90,0,.62);letter-spacing:.15em;margin-bottom:4px">⚠ EMERGENCY COUNCIL ⚠</div>
+            <div style="font-size:2.5rem;filter:drop-shadow(0 4px 18px rgba(240,80,0,.65))">🗺️</div>
+            <div style="font-size:1.1rem;margin-top:0px;opacity:.72">🔥 🔥</div>`,
+      floor:`<span style="font-size:1rem;opacity:.46">🛡️</span><span style="font-size:1.1rem;opacity:.5">⚔️</span><span style="font-size:1rem;opacity:.46">🛡️</span>`,
+    },
+    checksum:{
+      name:'Cipher Relay',obj:'Recall the cipher order',
+      glow:'rgba(60,140,240,.25)',torch:'#3c8cf0',
+      wallL:`<div style="font-size:.65rem;opacity:.38;letter-spacing:2px;color:#3c8cf0;font-family:monospace">01</div><div style="font-size:.6rem;opacity:.3;color:#3c8cf0;font-family:monospace">10</div><div style="font-size:.65rem;opacity:.28;color:#3c8cf0;font-family:monospace">11</div>`,
+      wallR:`<div style="font-size:.65rem;opacity:.38;letter-spacing:2px;color:#3c8cf0;font-family:monospace">10</div><div style="font-size:.6rem;opacity:.3;color:#3c8cf0;font-family:monospace">01</div><div style="font-size:.65rem;opacity:.28;color:#3c8cf0;font-family:monospace">00</div>`,
+      feat:`<div style="font-size:3rem;filter:drop-shadow(0 4px 20px rgba(60,140,240,.65))">🔐</div>
+            <div style="font-size:.38rem;color:rgba(60,140,240,.68);letter-spacing:.18em;margin-top:4px">CIPHER SEQUENCE</div>
+            <div style="font-size:.55rem;color:rgba(60,140,240,.4);letter-spacing:6px;margin-top:3px">█ ░ █ █ ░</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">🗝️</span><span style="font-size:1.1rem;opacity:.46">🔑</span><span style="font-size:1rem;opacity:.4">🗝️</span>`,
+    },
+    quarantine:{
+      name:'Apothecary Ward',obj:'Sort the suspicious items',
+      glow:'rgba(80,200,80,.24)',torch:'#50c850',
+      wallL:`<div style="font-size:.88rem;opacity:.5">⚗️</div><div style="font-size:.82rem;opacity:.44">🧪</div><div style="font-size:.76rem;opacity:.38">⚗️</div>`,
+      wallR:`<div style="font-size:.88rem;opacity:.5">🧪</div><div style="font-size:.82rem;opacity:.44">⚗️</div><div style="font-size:.76rem;opacity:.35">🌿</div>`,
+      feat:`<div style="font-size:2.7rem;filter:drop-shadow(0 4px 16px rgba(80,200,80,.52))">⚗️</div>
+            <div style="font-size:.38rem;color:rgba(80,200,80,.65);letter-spacing:.15em;margin-top:4px">SORT THE REMEDIES</div>
+            <div style="font-size:1rem;margin-top:4px;opacity:.65">🌿 🍄 🌿</div>`,
+      floor:`<span style="font-size:1rem;opacity:.46">🌿</span><span style="font-size:1.1rem;opacity:.5">🧪</span><span style="font-size:1rem;opacity:.46">🌿</span>`,
+    },
+    blackbox:{
+      name:'Royal Archive Recall',obj:'Remember the castle record',
+      glow:'rgba(120,60,200,.24)',torch:'#9040d8',
+      wallL:`<div style="font-size:1rem;opacity:.5">📚</div><div style="font-size:.95rem;opacity:.44">📚</div><div style="font-size:.88rem;opacity:.38">📚</div><div style="font-size:.82rem;opacity:.32">📖</div>`,
+      wallR:`<div style="font-size:1rem;opacity:.5">📚</div><div style="font-size:.95rem;opacity:.44">📚</div><div style="font-size:.88rem;opacity:.38">📚</div><div style="font-size:.82rem;opacity:.32">📖</div>`,
+      feat:`<div style="font-size:2.9rem;filter:drop-shadow(0 4px 18px rgba(120,60,200,.55))">📖</div>
+            <div style="font-size:.38rem;color:rgba(180,120,255,.62);letter-spacing:.15em;margin-top:4px">THE ROYAL RECORD</div>
+            <div style="font-size:1rem;margin-top:4px;opacity:.55">🔎 🕯️</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">📜</span><span style="font-size:1.1rem;opacity:.46">🔎</span><span style="font-size:1rem;opacity:.4">📜</span>`,
+    },
+    'royal-whisper':{
+      name:'The Royal Whisper',obj:'One clue reveals loyalty',
+      glow:'rgba(201,168,76,.32)',torch:'#f0d070',
+      wallL:`<div style="font-size:1.4rem;opacity:.38">🪟</div><div style="font-size:.82rem;opacity:.3">🪶</div>`,
+      wallR:`<div style="font-size:1.4rem;opacity:.38">🪟</div><div style="font-size:.82rem;opacity:.3">📜</div>`,
+      feat:`<div style="display:flex;gap:18px;align-items:flex-end;margin-bottom:5px">
+        <div style="font-size:1.7rem;opacity:.52">🪑</div>
+        <div style="font-size:2.1rem;filter:drop-shadow(0 4px 18px rgba(201,168,76,.65))">🕯️</div>
+        <div style="font-size:1.7rem;opacity:.52">🪑</div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(201,168,76,.62);letter-spacing:.15em;margin-top:2px">WHISPER IN SECRET</div>`,
+      floor:`<span style="font-size:1rem;opacity:.35">🌹</span><span style="font-size:1.1rem;opacity:.46">🕯️</span><span style="font-size:1rem;opacity:.35">🌹</span>`,
+    },
+    'dungeon-trial':{
+      name:'The Dungeon Trial',obj:'Answer or face the goblet',
+      glow:'rgba(180,0,0,.34)',torch:'#cc2010',
+      wallL:`<div style="font-size:1rem;opacity:.45">⛓️</div><div style="font-size:.86rem;opacity:.38">⛓️</div>`,
+      wallR:`<div style="font-size:1rem;opacity:.45">⛓️</div><div style="font-size:.86rem;opacity:.38">⛓️</div>`,
+      feat:`<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:3px">
+        <div class="rs-bar" style="height:78px"></div><div class="rs-bar" style="height:78px"></div>
+        <div style="padding:0 8px;text-align:center">
+          <div style="font-size:2.2rem;filter:drop-shadow(0 4px 18px rgba(200,0,0,.75))">💀</div>
+          <div style="font-size:1rem;opacity:.7;margin-top:-4px">⛓️</div>
+        </div>
+        <div class="rs-bar" style="height:78px"></div><div class="rs-bar" style="height:78px"></div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(200,40,20,.72);letter-spacing:.18em;margin-top:4px">ANSWER — OR PERISH</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">💀</span><span style="font-size:1.1rem;opacity:.5">🍷</span><span style="font-size:1rem;opacity:.4">💀</span>`,
+    },
+    'herald-chain':{
+      name:"The Herald's Chain",obj:"Pass the word — seeds drift",
+      glow:'rgba(60,120,240,.24)',torch:'#4080f0',
+      wallL:`<div style="font-size:1.3rem;opacity:.46">🏴</div><div style="font-size:.88rem;opacity:.4;color:#4080f0">⚜️</div>`,
+      wallR:`<div style="font-size:1.3rem;opacity:.46">🏴</div><div style="font-size:.88rem;opacity:.4;color:#4080f0">⚜️</div>`,
+      feat:`<div style="font-size:1rem;opacity:.5;letter-spacing:4px">📜—📜—📜</div>
+            <div style="font-size:2.5rem;filter:drop-shadow(0 4px 16px rgba(60,120,240,.55));margin:4px 0">🔗</div>
+            <div style="font-size:.38rem;color:rgba(80,140,255,.65);letter-spacing:.15em;margin-top:2px">FORGE THE WORD CHAIN</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">📜</span><span style="font-size:1.1rem;opacity:.46">🔗</span><span style="font-size:1rem;opacity:.4">📜</span>`,
+    },
+    'throne-vote':{
+      name:'The Throne Room',obj:'Rate — values reveal loyalty',
+      glow:'rgba(155,89,182,.32)',torch:'#b060e0',
+      wallL:`<div style="font-size:1.2rem;opacity:.44">🏛️</div><div style="font-size:.92rem;opacity:.36">⚜️</div>`,
+      wallR:`<div style="font-size:1.2rem;opacity:.44">🏛️</div><div style="font-size:.92rem;opacity:.36">⚜️</div>`,
+      feat:`<div style="font-size:.75rem;color:rgba(201,168,76,.38);letter-spacing:3px">▬▬▬▬▬▬</div>
+            <div style="font-size:3.2rem;filter:drop-shadow(0 6px 22px rgba(155,89,182,.7));margin:2px 0">👑</div>
+            <div style="font-size:.38rem;color:rgba(180,100,255,.65);letter-spacing:.18em;margin-top:4px">THE THRONE JUDGES ALL</div>
+            <div style="font-size:.7rem;color:rgba(201,168,76,.38);letter-spacing:3px">— ★ ★ ★ ★ ★ —</div>`,
+      floor:`<span style="font-size:1rem;opacity:.4">⚜️</span><span style="font-size:1.1rem;opacity:.5">👑</span><span style="font-size:1rem;opacity:.4">⚜️</span>`,
+    },
+  };
+
+  const r = R[roomId] || {
+    name:'Castle Chamber',obj:'Awaiting a challenge',
+    glow:'rgba(201,168,76,.12)',torch:'var(--ember)',
+    wallL:'<div style="font-size:1rem;opacity:.35">🏰</div>',
+    wallR:'<div style="font-size:1rem;opacity:.35">🏰</div>',
+    feat:'<div style="font-size:2.6rem;opacity:.5">🏰</div>',
+    floor:'<span style="font-size:1rem;opacity:.35">⚔️</span><span style="font-size:1.1rem;opacity:.4">🏰</span><span style="font-size:1rem;opacity:.35">⚔️</span>',
+  };
+
+  const cls = `room-${(roomId || 'default').replace(/[^a-z0-9]/g,'-')}`;
+
+  return `<div class="room-scene ${cls}">
+    <div class="rs-glow" style="left:50%;top:35%;transform:translate(-50%,-50%);width:220px;height:160px;background:radial-gradient(ellipse,${r.glow} 0%,transparent 70%);animation:roomTintPulse 3s ease-in-out infinite"></div>
+    <div class="rs-glow" style="left:8%;top:44px;width:64px;height:64px;background:radial-gradient(ellipse,rgba(232,131,42,.22) 0%,transparent 70%);animation:roomTintPulse 2.2s ease-in-out infinite"></div>
+    <div class="rs-glow" style="right:8%;top:44px;width:64px;height:64px;background:radial-gradient(ellipse,rgba(232,131,42,.22) 0%,transparent 70%);animation:roomTintPulse 2.2s .7s ease-in-out infinite"></div>
+    <div class="room-torch left" style="text-shadow:0 0 16px ${r.torch},0 0 28px ${r.torch}">🔥</div>
+    <div class="room-torch right" style="text-shadow:0 0 16px ${r.torch},0 0 28px ${r.torch}">🔥</div>
+    <div class="rs-wall-l">${r.wallL}</div>
+    <div class="rs-wall-r">${r.wallR}</div>
+    <div class="rs-feature">${r.feat}</div>
+    <div class="rs-floor-items">${r.floor}</div>
+    <div class="scene-caption">
+      <div class="scene-title">${esc(r.name)}</div>
+      <div class="scene-objective">${esc(objective || r.obj)}</div>
+    </div>
+    ${figuresHtml}
+  </div>`;
+}
+
+function renderCaptainHub() {
+  const cap = S.captainName;
+  const capColor = (S.players || []).find(p => p.name === cap)?.color || 'var(--gold)';
+  const testees = S.selectedTestees || [];
+  const knightChips = testees.map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    return `<div class="knight-chip" style="--c:${pl?.color || 'var(--muted)'}"><span style="color:${pl?.color}">${esc(n)}</span></div>`;
+  }).join('');
+
+  return `<div class="center-text">
+    <div class="phase-kicker">Round ${S.round || '—'}</div>
+    <div class="cap-name" style="color:${capColor}">${esc(cap || '—')}</div>
+    <div class="phase-sub">IS SOVEREIGN THIS ROUND</div>
+    <div class="divider" style="max-width:320px;margin:10px auto"></div>
+    <div style="font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">SELECTED CHAMBER</div>
+    <div class="room-label">${S.selectedRoomName || '— awaiting selection —'}</div>
+    ${renderRoomScene(S.selectedRoom, S.selectedRoom ? 'Prepare the chamber and choose who enters' : 'Choose a chamber for the next trial', renderSceneFigures(testees, -1))}
+    ${S.selectedRoom ? renderRoomGuide(S.selectedRoom) : ''}
+    ${testees.length ? `
+      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">KNIGHTS SELECTED FOR TRIAL</div>
+      <div class="knight-chips">${knightChips}</div>
+    ` : `<p style="font-size:.52rem;color:var(--muted);margin:12px 0">Sovereign is choosing on their device…</p>`}
+    <div class="divider" style="max-width:320px;margin:10px auto"></div>
+    <p style="font-size:.48rem;color:var(--border2);letter-spacing:.08em">↓ captain controls are on their phone ↓</p>
+  </div>`;
+}
+
+// ── Dungeon Trial ──────────────────────────────────────────────────────
+function renderDungeonTrial() {
+  const d = S.dungeon || {};
+  const testees = S.selectedTestees || [];
+  const answered = d.answerCount || 0;
+  const cards = testees.map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    return `<div class="testee-card active">
+      <div class="testee-pip" style="background:${pl?.color || '#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color || '#fff'}">${esc(n)}</span>
+      <span class="testee-status" style="color:var(--gold)">⚔ DECIDING</span>
+    </div>`;
+  }).join('');
+  const opts = (d.options || []).map((o,i) => `<div style="font-size:.52rem;color:var(--text2);margin:2px 0">${['A','B','C','D'][i]}. ${esc(o)}</div>`).join('');
+  return `<div class="trial-wrap">
+    ${renderRoomScene('dungeon-trial', 'All knights face the trial simultaneously', renderSceneFigures(testees, -1))}
+    <div class="trial-banner">
+      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.15em;margin-bottom:4px">⛓ DUNGEON TRIAL</div>
+      <div style="font-size:.58rem;color:var(--ember);margin-bottom:8px">${esc(d.question||'—')}</div>
+      <div style="background:rgba(0,0,0,.3);border-radius:4px;padding:8px 10px;text-align:left;max-width:340px;margin:0 auto">${opts}</div>
+    </div>
+    <div class="testee-row">${cards}</div>
+    <div style="font-size:.55rem;color:var(--gold);margin:8px 0">${answered} / ${testees.length} answered</div>
+    <div class="room-ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border2)" stroke-width="6"/>
+        <circle id="dyn-ring" cx="36" cy="36" r="26" fill="none" stroke="var(--ember)" stroke-width="6"
+          stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="square"
+          style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div class="ring-num" id="dyn-ring-txt">${S.roomTimerLeft || '—'}</div>
+    </div>
+    <div class="hidden-banner">▓▓▓  ANSWERS HIDDEN ON DEVICES  ▓▓▓</div>
+  </div>`;
+}
+
+function renderDungeonGoblet() {
+  const d = S.dungeon || {};
+  const wrong = d.wrongPlayers || [];
+  const choices = d.gobletChoices || {};
+  const chosen = Object.keys(choices).length;
+  const playerChips = wrong.map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    const hasPicked = choices[n] != null;
+    return `<div class="testee-card${hasPicked?'':' active'}">
+      <div class="testee-pip" style="background:${pl?.color||'#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color||'#fff'}">${esc(n)}</span>
+      <span class="testee-status" style="color:${hasPicked?'var(--green2)':'var(--ember)'}">${hasPicked?'CHOSE':'CHOOSING…'}</span>
+    </div>`;
+  }).join('');
+  return `<div class="trial-wrap">
+    ${renderRoomScene('dungeon-trial','The condemned must choose a goblet','')}
+    <div class="trial-banner">
+      <div style="font-size:.5rem;color:var(--ember);letter-spacing:.15em;margin-bottom:6px">☠ THE POISONED GOBLET</div>
+      <div style="font-size:.56rem;color:var(--text2);margin-bottom:10px">Those who answered wrongly must choose a goblet. One is poisoned.</div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:32px;font-size:2rem;margin:12px 0">
+      <span title="Goblet A">🍷</span>
+      <span title="Goblet B">🍷</span>
+    </div>
+    <div class="testee-row">${playerChips}</div>
+    <div style="font-size:.55rem;color:var(--gold);margin:6px 0">${chosen} / ${wrong.length} have chosen</div>
+    <div class="room-ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border2)" stroke-width="6"/>
+        <circle id="dyn-ring" cx="36" cy="36" r="26" fill="none" stroke="var(--ember)" stroke-width="6"
+          stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="square"
+          style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div class="ring-num" id="dyn-ring-txt">${S.roomTimerLeft || '—'}</div>
+    </div>
+  </div>`;
+}
+
+function renderDungeonReveal() {
+  const d = S.dungeon || {};
+  const wrong = d.wrongPlayers || [];
+  const cursed = d.cursedThisRound || [];
+  const survived = wrong.filter(n => !cursed.includes(n));
+  const choices = d.gobletChoices || {};
+  const poisoned = d.gobletPoisoned;
+
+  const resultRows = (S.selectedTestees || []).map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    const wasWrong = wrong.includes(n);
+    const wasCursed = cursed.includes(n);
+    const chose = choices[n] != null ? (['A','B'][choices[n]]) : null;
+    let badge, color;
+    if (!wasWrong) { badge = '✓ CORRECT'; color = 'var(--green2)'; }
+    else if (wasCursed) { badge = '☠ CURSED SPIRIT'; color = 'var(--ember)'; }
+    else { badge = '💧 SURVIVED'; color = 'var(--gold)'; }
+    return `<div class="testee-card">
+      <div class="testee-pip" style="background:${pl?.color||'#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color||'#fff'}">${esc(n)}</span>
+      ${chose ? `<span style="font-size:.45rem;color:var(--muted)">chose ${chose}</span>` : ''}
+      <span class="testee-status" style="color:${color}">${badge}</span>
+    </div>`;
+  }).join('');
+
+  const gobletReveal = (wrong.length > 0 && poisoned != null) ? `
+    <div style="display:flex;justify-content:center;gap:32px;font-size:2rem;margin:10px 0">
+      <div style="text-align:center">
+        <div style="font-size:1.6rem">${poisoned===0?'☠':'🍷'}</div>
+        <div style="font-size:.45rem;color:${poisoned===0?'var(--ember)':'var(--green2)'}">${poisoned===0?'POISON':'WATER'}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:1.6rem">${poisoned===1?'☠':'🍷'}</div>
+        <div style="font-size:.45rem;color:${poisoned===1?'var(--ember)':'var(--green2)'}">${poisoned===1?'POISON':'WATER'}</div>
+      </div>
+    </div>` : '';
+
+  const cursedNotice = cursed.length ? `<div style="font-size:.56rem;color:var(--ember);margin:8px 0;letter-spacing:.05em">☠ ${cursed.join(', ')} ${cursed.length===1?'becomes a':'become'} CURSED SPIRIT${cursed.length>1?'S':''}</div>` : `<div style="font-size:.56rem;color:var(--green2);margin:8px 0">All wrong-answerers survived the goblet!</div>`;
+
+  return `<div class="trial-wrap">
+    ${renderRoomScene('dungeon-trial','The results are revealed…','')}
+    <div style="font-size:.5rem;color:var(--muted);letter-spacing:.15em;margin-bottom:4px">⛓ DUNGEON TRIAL — RESULT</div>
+    <div style="font-size:.52rem;color:var(--text2);margin-bottom:6px">Question: ${esc(d.question||'—')}</div>
+    ${gobletReveal}
+    ${cursedNotice}
+    <div class="testee-row" style="flex-wrap:wrap">${resultRows}</div>
+    <div style="margin-top:14px">
+      <button class="btn btn-gold" onclick="act('continue')">⚔ Continue to next round</button>
+      <button class="btn btn-ghost" style="margin-left:6px" onclick="act('push-button')">🔔 Sound the Alarm</button>
+    </div>
+  </div>`;
+}
+
+// ── Herald Chain ───────────────────────────────────────────────────────
+function renderHeraldChain() {
+  const testees = S.selectedTestees || [];
+  const curIdx  = S.roomTesteeIdx || 0;
+  const cur     = S.currentTestee;
+
+  const cards = testees.map((n, i) => {
+    const pl = (S.players || []).find(p => p.name === n);
+    const isActive = n === cur && S.phase === 'room-active';
+    const isDone   = i < curIdx;
+    let statusText  = isActive ? 'LINKING…' : isDone ? '✓ LINKED' : 'WAITING';
+    let statusColor = isActive ? 'var(--ember)' : isDone ? 'var(--green2)' : 'var(--muted)';
+    return `<div class="testee-card ${isActive ? 'active' : isDone ? 'done' : ''}">
+      <div class="testee-pip" style="background:${pl?.color || '#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color || '#fff'}">${esc(n)}</span>
+      ${i > 0 ? `<span style="font-size:.38rem;color:var(--muted)">↱ from prev</span>` : `<span style="font-size:.38rem;color:var(--gold)">seed word</span>`}
+      <span class="testee-status" style="color:${statusColor}">${statusText}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="trial-wrap">
+    ${renderRoomScene('herald-chain', cur ? `${cur} adds to the chain` : 'Building the word chain…', renderSceneFigures(testees, curIdx))}
+    <div class="trial-banner">
+      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.15em;margin-bottom:6px">🔗 CHAIN IN PROGRESS</div>
+      <div class="trial-room-name">THE HERALD'S CHAIN</div>
+      <div style="font-size:.46rem;color:var(--muted);margin-top:4px">Each knight builds on the previous word — alien starts with a different seed</div>
+    </div>
+    <div class="testee-row">${cards}</div>
+    <div class="room-ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border2)" stroke-width="6"/>
+        <circle id="dyn-ring" cx="36" cy="36" r="26" fill="none" stroke="var(--gold)" stroke-width="6"
+          stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="square"
+          style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div class="ring-num" id="dyn-ring-txt">${S.roomTimerLeft || '—'}</div>
+    </div>
+    <div class="hidden-banner">▓▓▓  WORDS HIDDEN ON DEVICES  ▓▓▓</div>
+  </div>`;
+}
+
+// ── Throne Vote ─────────────────────────────────────────────────────────
+function renderThroneVote() {
+  const tv = S.throneVote || {};
+  const testees = S.selectedTestees || [];
+  const answered = tv.answerCount || 0;
+  const total = testees.length;
+
+  const chips = testees.map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    const hasAns = tv.answers && tv.answers[n] != null;
+    return `<div class="testee-card ${hasAns ? 'done' : ''}">
+      <div class="testee-pip" style="background:${pl?.color || '#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color || '#fff'}">${esc(n)}</span>
+      <span class="testee-status" style="color:${hasAns ? 'var(--green2)' : 'var(--muted)'}">${hasAns ? '★ RATED' : 'RATING…'}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="trial-wrap">
+    ${renderRoomScene('throne-vote', 'All knights rate simultaneously', '')}
+    <div class="trial-banner">
+      <div style="font-size:.5rem;color:var(--purple2);letter-spacing:.15em;margin-bottom:6px">👑 THE THRONE ROOM</div>
+      <div style="font-size:.56rem;color:var(--text);margin-bottom:4px">"${esc(tv.statement || '…')}"</div>
+      <div style="font-size:.44rem;color:var(--muted)">Knights rate agreement 1–5 stars in secret</div>
+    </div>
+    <div class="testee-row">${chips}</div>
+    <div style="font-size:.55rem;color:var(--gold);margin:6px 0">${answered} / ${total} rated</div>
+    <div class="room-ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border2)" stroke-width="6"/>
+        <circle id="dyn-ring" cx="36" cy="36" r="26" fill="none" stroke="var(--purple2)" stroke-width="6"
+          stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="square"
+          style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div class="ring-num" id="dyn-ring-txt">${S.roomTimerLeft || '—'}</div>
+    </div>
+  </div>`;
+}
+
+function renderThroneReveal() {
+  const h = S.probeHistory || [];
+  const last = h[h.length - 1];
+  if (!last || last.room !== 'throne-vote') return renderReveal();
+
+  const entries = (last.entries || []).map((e, i) => {
+    const pl = (S.players || []).find(p => p.name === e.player);
+    return `<div class="reveal-entry" id="rev-${i}">
+      <div class="entry-gem" style="background:${pl?.color || '#666'}"></div>
+      <div style="flex:1">
+        <div class="entry-name">${esc(e.player)}</div>
+        <div class="entry-answer">${esc(e.answer || '—')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div>
+    ${renderRoomScene('throne-vote', 'The court reviews loyalty', renderSceneFigures(last.entries?.map(e=>e.player)||[], last.entries?.length||0))}
+    <h2 style="margin-bottom:6px">👑 THRONE ROOM — RATINGS</h2>
+    <div style="font-size:.5rem;color:var(--muted);margin-bottom:10px">"${esc(last.humanPrompt)}"</div>
+    <div class="scroll-area" id="reveal-entries">${entries}</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="act('push-button')">🔔 Sound the Alarm</button>
+      <button class="btn btn-gold" onclick="act('continue')">Next round ›</button>
+    </div>
+  </div>`;
+}
+
+// ── Room Guide (Tutorial Panel) ─────────────────────────────────────────
+const ROOM_TUTORIALS = {
+  writing:{goal:"Each knight writes a one-sentence answer to a secret question. Humans get one version; the alien gets a subtly different version.",rules:"Knights write in private. The court reads all answers aloud. Spot who answered a different question.",hostIntro:"Read each answer aloud with a pause. Encourage the table to debate before moving on.",playerHint:"Keep your answer short and natural. If your question feels odd, you might be the alien."},
+  drawing:{goal:"Knights draw a hidden prompt. Humans draw the same thing; the alien draws something related but different.",rules:"No words allowed in the drawing. All drawings revealed at once. Vote on who drew the odd one out.",hostIntro:"Show all drawings side by side. Ask players to explain their drawing briefly.",playerHint:"Draw quickly but clearly. Aliens often subconsciously add extra detail — keep it simple."},
+  deliberation:{goal:"Knights answer a moral dilemma. Humans get one framing; the alien gets the opposite framing.",rules:"All answers are read aloud. Look for someone who seems to be answering a different question entirely.",hostIntro:"Read all answers before opening discussion. Then ask: who sounds like they live in a different castle?",playerHint:"Answer naturally to your prompt. Overthinking it will make you sound suspicious."},
+  opinion:{goal:"Knights share a hot-take opinion on a topic. The alien's topic is a subtle variation that reveals different values.",rules:'Each knight reads their answer aloud. The table votes on who sounds most "off."',hostIntro:"Let each knight read their own answer. Then moderate a 60-second debate.",playerHint:"Sound confident even if your topic felt different. Hesitation is a giveaway."},
+  bioscanner:{goal:"Knights match a sequence of symbols. The alien's sequence has one symbol swapped.",rules:"All sequences are revealed. The one with a unique symbol is the alien.",hostIntro:"Reveal all sequences simultaneously. Give the table 20 seconds to compare before discussion.",playerHint:"Memorise your sequence. If a symbol feels unfamiliar, you may be the alien."},
+  crisis:{goal:"Knights rank a list of castle crises by urgency. The alien's list has one crisis replaced.",rules:"Read rankings aloud. The knight who ranked something no one else had is suspicious.",hostIntro:"Go through each crisis. Ask: did anyone not have this on their list?",playerHint:"Rank confidently. If you don't recognise an item, it may be your alien crisis."},
+  checksum:{goal:"Knights recall a cipher sequence shown briefly at the start. The alien's sequence is slightly different.",rules:"Write the sequence from memory. Compare — whoever recalled a different sequence is suspect.",hostIntro:"Show the cipher for 5 seconds, then cover it. Reveal all answers and compare.",playerHint:"Focus hard on the sequence. If yours feels wrong, trust your memory anyway."},
+  quarantine:{goal:"Knights sort items into two groups. The alien's sorting key is inverted.",rules:"Compare group assignments. The knight with a mirrored sort may be the alien.",hostIntro:"Reveal all sorts. Look for someone whose A and B groups are swapped.",playerHint:"Sort decisively. A swapped sort is the most common alien tell."},
+  blackbox:{goal:'Knights answer questions about a "royal record" read aloud. The alien heard a different record.',rules:"Compare answers. Differing facts point to the alien.",hostIntro:"Read the record clearly once. After answers are collected, ask: did anything differ?",playerHint:"Listen carefully. One detail in your record may differ — that's your tell."},
+  'royal-whisper':{goal:"Two knights each whisper a single clue about themselves. One is given a secret alien clue.",rules:"The clue-giver speaks in private. The court guesses which clue was alien-influenced.",hostIntro:"Have each knight whisper to the host. Then read both clues aloud for discussion.",playerHint:"Make your clue genuine but vague. Aliens should mimic the human clue style."},
+  'dungeon-trial':{goal:"All testees answer the same trivia question simultaneously. Wrong-answerers face the Poisoned Goblet.",rules:"Answer quickly — only one chance. Wrong answers lead to a 50/50 cursed goblet. Cursed Spirits lose their vote.",hostIntro:"Show the question on screen. All knights answer privately. Then reveal who was right.",playerHint:"Think before you tap — no changing your answer. Cursed Spirits are still in the game but lose their vote."},
+  'herald-chain':{goal:"Knights pass a word one by one, each adding an association. The alien starts from a different seed word.",rules:"Each knight sees only the previous knight's word, not the original seed. Spot who broke the chain's theme.",hostIntro:"Watch for a sudden thematic shift in the chain — that's where the alien's drift began.",playerHint:"Associate naturally. If your word feels like it came from a different theme, you might be the alien."},
+  'throne-vote':{goal:"All knights simultaneously rate a statement 1-5 stars. Humans and the alien see different statements.",rules:"Ratings are revealed together. Wildly different ratings may expose the alien's different statement.",hostIntro:"Read the human statement aloud, then reveal all ratings. Ask: does anyone's score seem off?",playerHint:"Rate honestly for your statement. A rating that doesn't match the human statement is suspicious."},
+};
+
+function renderRoomGuide(roomId) {
+  if (!roomId) return '';
+  const t = ROOM_TUTORIALS[roomId];
+  if (!t) return '';
+  return `<div class="room-guide" id="room-guide">
+    <div class="guide-header" onclick="toggleGuide()">
+      <span style="color:var(--gold);font-size:.5rem;letter-spacing:.1em">📖 ROOM GUIDE</span>
+      <span id="guide-chevron" style="font-size:.5rem;color:var(--muted)">▼</span>
+    </div>
+    <div id="guide-body" style="display:none;padding:10px 0 2px">
+      <div class="guide-row"><span class="guide-label">GOAL</span><span class="guide-val">${esc(t.goal)}</span></div>
+      <div class="guide-row"><span class="guide-label">RULES</span><span class="guide-val">${esc(t.rules)}</span></div>
+      <div class="guide-row" style="background:rgba(201,168,76,.06);border-color:var(--gold)"><span class="guide-label" style="color:var(--gold)">HOST SCRIPT</span><span class="guide-val" style="color:var(--gold)">${esc(t.hostIntro)}</span></div>
+    </div>
+  </div>`;
+}
+
+function toggleGuide() {
+  const body = document.getElementById('guide-body');
+  const chev = document.getElementById('guide-chevron');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.textContent = open ? '▼' : '▲';
+}
+
+// ── Trial ──────────────────────────────────────────────────────────────
+function renderTrial() {
+  const testees = S.selectedTestees || [];
+  const cur = S.currentTestee;
+  const curIdx = S.roomTesteeIdx || 0;
+
+  const cards = testees.map((n, i) => {
+    const pl = (S.players || []).find(p => p.name === n);
+    const isActive = (n === cur) && S.phase === 'room-active';
+    const isDone   = i < curIdx;
+    const isPending = i > curIdx;
+    let cls = isActive ? 'active' : isDone ? 'done' : '';
+    let statusColor = isActive ? 'var(--ember)' : isDone ? 'var(--green2)' : 'var(--muted)';
+    let statusText  = isActive ? 'WRITING…' : isDone ? '✓ DONE' : 'WAITING';
+    return `<div class="testee-card ${cls}">
+      <div class="testee-pip" style="background:${pl?.color || '#666'}"></div>
+      <span style="font-size:.55rem;color:${pl?.color || '#fff'}">${esc(n)}</span>
+      <span class="testee-status" style="color:${statusColor}">${statusText}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="trial-wrap">
+    ${renderRoomScene(S.selectedRoom, cur ? `${cur} faces the chamber now` : 'The chamber is being prepared', renderSceneFigures(testees, curIdx))}
+    <div class="trial-banner">
+      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.15em;margin-bottom:6px">⚗ TRIAL IN PROGRESS</div>
+      <div class="trial-room-name">${(S.selectedRoomName || '—').toUpperCase()}</div>
+    </div>
+    <div class="testee-row">${cards}</div>
+    <div class="room-ring-wrap">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="26" fill="none" stroke="var(--border2)" stroke-width="6"/>
+        <circle id="dyn-ring" cx="36" cy="36" r="26" fill="none" stroke="var(--gold)" stroke-width="6"
+          stroke-dasharray="${2 * Math.PI * 26}" stroke-dashoffset="0" stroke-linecap="square"
+          style="transition:stroke-dashoffset .9s linear"/>
+      </svg>
+      <div class="ring-num" id="dyn-ring-txt">${S.roomTimerLeft || '—'}</div>
+    </div>
+    <div class="hidden-banner">▓▓▓  INPUT HIDDEN ON DEVICES  ▓▓▓</div>
+  </div>`;
+}
+
+// ── Reveal ─────────────────────────────────────────────────────────────
+function renderReveal() {
+  const h = S.probeHistory || [];
+  const last = h[h.length - 1];
+  if (!last) return '<p class="label center-text">No results yet.</p>';
+
+  const ROOM_NAMES = { writing:'Writing Chamber',drawing:'Drawing Quarters',deliberation:'Council Chamber',opinion:'Opinion Hall',bioscanner:'Oath Mirror',crisis:'Crisis Council',checksum:'Cipher Relay',quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall','royal-whisper':'The Royal Whisper','dungeon-trial':'The Dungeon Trial','herald-chain':"The Herald's Chain",'throne-vote':'The Throne Room' };
+  const answers = S.answers || {};
+
+  const entries = (last.entries || []).map((e, i) => {
+    const pl = (S.players || []).find(p => p.name === e.player);
+    const ans = answers[e.player] || e.answer || '—';
+    let display = ans;
+    if (last.room === 'drawing' && ans.startsWith('data:image')) {
+      display = `<img src="${ans}" style="max-width:130px;border-radius:2px;border:1px solid var(--border2)">`;
+    } else if (last.room === 'quarantine') {
+      try { const d = JSON.parse(ans); display = `A: ${esc(d.a?.join(', ') || '—')} | B: ${esc(d.b?.join(', ') || '—')}`; } catch { display = esc(ans); }
+    } else {
+      display = esc(ans);
+    }
+    return `<div class="reveal-entry" id="rev-${i}">
+      <div class="entry-gem" style="background:${pl?.color || '#666'}"></div>
+      <div style="flex:1">
+        <div class="entry-name">${esc(e.player)}</div>
+        <div class="entry-answer">${display}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div>
+    ${renderRoomScene(last.room, 'The court reviews the evidence', renderSceneFigures(last.entries?.map(e=>e.player)||[], last.entries?.length||0))}
+    <h2 style="margin-bottom:10px">📜 TESTIMONIES — ${ROOM_NAMES[last.room] || last.room}</h2>
+    <div class="scroll-area" id="reveal-entries">${entries}</div>
+    <div class="human-prompt">Human prompt: "${esc(last.humanPrompt)}"</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="act('push-button')">🔔 Sound the Alarm</button>
+      <button class="btn btn-gold" onclick="act('continue')">Next round ›</button>
+    </div>
+  </div>`;
+}
+
+// Stagger reveal entries
+function scheduleReveal() {
+  const entries = document.querySelectorAll('.reveal-entry');
+  entries.forEach((el, i) => {
+    setTimeout(() => el.classList.add('shown'), 300 + i * 800);
+  });
+}
+
+// ── Extraction ─────────────────────────────────────────────────────────
+function renderExtraction() {
+  const ext = S.extraction || {};
+  const suspects = ext.suspects || [];
+  const votes = ext.votes || {};
+  const pusherColor = (S.players || []).find(p => p.name === ext.pusher)?.color || 'var(--ember)';
+  const requiredVotes = S.requiredVotes || (S.players || []).filter(p => p.alive).length;
+  const yesVotes = Object.values(votes).filter(Boolean).length;
+  const allApprove = suspects.length && requiredVotes > 0 && yesVotes >= requiredVotes;
+
+  const suspectCells = suspects.map(n => {
+    const pl = (S.players || []).find(p => p.name === n);
+    return `<div class="suspect-cell">
+      <div class="suspect-pip" style="background:${pl?.color || '#666'}"></div>
+      <div class="suspect-name" style="color:${pl?.color || '#fff'}">${esc(n)}</div>
+    </div>`;
+  }).join('');
+
+  const voteChips = Object.entries(votes).map(([name, v]) =>
+    `<div class="vote-chip ${v ? 'vote-yes' : 'vote-no'}">${esc(name)}: ${v ? 'EJECT' : 'SPARE'}</div>`
+  ).join('');
+
+  return `<div class="extraction-wrap">
+    <div class="alarm-title">🔔 THE ALARM IS SOUNDED</div>
+    <div class="alarm-accuser" style="color:${pusherColor}">
+      ${esc(ext.pusher || '?')} has rung the bell of judgement!
+    </div>
+    ${suspects.length
+      ? `<div style="font-size:.48rem;color:var(--muted);letter-spacing:.1em;margin-bottom:8px">MARKED FOR THE DUNGEON</div>
+         <div class="suspects-row">${suspectCells}</div>`
+      : `<p style="font-size:.58rem;color:var(--muted);margin:16px 0">No suspects marked yet…</p>`
+    }
+    ${voteChips
+      ? `<div class="votes-label">VOTES CAST: ${Object.keys(votes).length}/${requiredVotes} · EJECT ${yesVotes}/${requiredVotes}</div><div class="votes-grid">${voteChips}</div>`
+      : ''
+    }
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="act('vote-fail')">❌ Vote fails — return</button>
+      <button class="btn btn-red" onclick="act('confirm-eject')" ${allApprove?'':'disabled'}>⚔ To the dungeon!</button>
+    </div>
+  </div>`;
+}
+
+// ── Game over ───────────────────────────────────────────────────────────
+function renderGameover() {
+  const reason = S.gameOverReason;
+  const humansWin = reason === 'humansWin';
+  const cls = humansWin ? 'human-win' : 'alien-win';
+  const headline = humansWin ? 'THE CASTLE IS SAVED!' : reason === 'humanEjected' ? 'THE TRAITORS TRIUMPH!' : 'THE CASTLE FALLS!';
+  const sub = humansWin ? 'All traitors cast to the dungeon. The castle holds.' : reason === 'humanEjected' ? 'An innocent knight was condemned. The traitors claim the keep.' : 'The quest timer expired. The traitors seized the castle.';
+  const roles = S.roleNames || [];
+
+  return `<div class="center-text">
+    <div style="font-size:2.8rem;margin-bottom:10px">${humansWin ? '🏆' : '🌑'}</div>
+    <div class="go-banner ${cls}">${headline}</div>
+    <p style="font-size:.55rem;color:var(--muted);margin:8px 0 16px;line-height:2">${sub}</p>
+    ${roles.length ? `<div class="roles-grid">
+      ${roles.map(p => `<div class="role-chip ${p.role === 'alien' ? 'role-i' : 'role-k'}">
+        <div style="font-size:.45rem;color:${p.role === 'alien' ? 'var(--purple2)' : 'var(--green2)'}">${p.role === 'alien' ? '🌑 TRAITOR' : '⚔ KNIGHT'}</div>
+        <div style="margin-top:2px;font-size:.5rem">${esc(p.name)}</div>
+        ${!p.alive ? '<div style="font-size:.4rem;color:var(--muted)">cast out</div>' : ''}
+      </div>`).join('')}
+    </div>` : ''}
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-gold" onclick="act('new-game')">⚔ Same players</button>
+      <button class="btn btn-ghost" onclick="fullReset()">↺ New players</button>
+    </div>
+  </div>`;
+}
+
+// ── Roster ─────────────────────────────────────────────────────────────
+function renderRoster() {
+  const cap = S.captainName;
+  document.getElementById('roster-pills').innerHTML = (S.players || []).map(p => {
+    const isCap = p.name === cap;
+    const isTesting = (S.selectedTestees || []).includes(p.name);
+    return `<div class="roster-pill${isCap ? ' cap-mark' : ''}${!p.alive ? ' dead' : ''}${isTesting ? ' testing' : ''}">
+      <div class="roster-pip" style="background:${p.color}"></div>
+      <span style="color:${p.color};font-size:.48rem">${esc(p.name)}${p.isBot ? ' <span style="font-size:.38rem;color:var(--muted)">[BOT]</span>' : ''}</span>
+      ${isCap ? '<span style="font-size:.4rem;color:var(--gold)"> ⚔</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Probe history ───────────────────────────────────────────────────────
+function renderProbe() {
+  const el = document.getElementById('probe-list');
+  const h = S.probeHistory || [];
+  const ROOM_SHORT = { writing:'Writing',drawing:'Drawing',deliberation:'Council',opinion:'Opinion',bioscanner:'Oath',crisis:'Crisis',checksum:'Cipher',quarantine:'Apoth.',blackbox:'Archive','royal-whisper':'Whisper','dungeon-trial':'Dungeon','herald-chain':'Herald','throne-vote':'Throne' };
+  if (!h.length) { el.innerHTML = '<p style="font-size:.45rem;color:var(--muted)">No evidence yet.</p>'; return; }
+  el.innerHTML = [...h].reverse().map(e => `
+    <div class="probe-card">
+      <div class="probe-room">R${e.round} · ${ROOM_SHORT[e.room] || e.room}</div>
+      ${(e.entries || []).map(r => `<div class="probe-row"><span class="probe-name">${esc(r.player)}</span><span>${esc(String(r.answer || '—').substring(0, 28))}</span></div>`).join('')}
+    </div>`).join('');
+}
+
+// ── Effect: Room entry countdown ────────────────────────────────────────
+function showRoomEntry() {
+  const overlay = document.getElementById('room-entry-overlay');
+  const numEl   = document.getElementById('entry-num');
+  const nameEl  = document.getElementById('entry-room-name');
+  if (!overlay || !numEl) return;
+  if (nameEl) nameEl.textContent = (S.selectedRoomName || '').toUpperCase();
+  let n = 3;
+  function setNum(v) {
+    numEl.style.animation = 'none';
+    numEl.offsetHeight; // reflow
+    numEl.textContent = v;
+    numEl.style.animation = '';
+  }
+  setNum(n);
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(iv);
+      overlay.style.transition = 'opacity .5s';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; overlay.style.transition = ''; overlay.style.opacity = '1'; }, 520);
+    } else {
+      setNum(n);
+    }
+  }, 950);
+}
+
+// ── Effect: Hex placed purple flash ─────────────────────────────────────
+function showHexFlash() {
+  const el = document.getElementById('hex-overlay');
+  if (!el) return;
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.style.display = 'none', 460);
+  }, 2100);
+}
+
+// ── Effect: All chambers sealed banner ──────────────────────────────────
+function showSealedBanner() {
+  const el = document.getElementById('sealed-overlay');
+  if (!el) return;
+  el.style.display = 'flex';
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.style.display = 'none', 720);
+  }, 2300);
+}
+
+// ── Effect: Answer received toast ───────────────────────────────────────
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.style.color = color || 'var(--text)';
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(-10px)';
+  }, 2200);
+}
+
+// ── Hex to RGB ──────────────────────────────────────────────────────────
+function fullReset() {
+  if (!confirm('Clear ALL players and return everyone to the join screen?')) return;
+  act('full-reset');
+}
+
+function emergencyRestart() {
+  if (!confirm('Emergency restart? This clears the current game and sends every player back to the join screen.')) return;
+  act('full-reset');
+}
+
+function shutdownServer() {
+  if (!confirm('Shut down the game server? This will disconnect all players and stop the server.')) return;
+  fetch('/api/shutdown', { method: 'POST' })
+    .catch(() => {});
+  document.getElementById('phase-content').innerHTML =
+    '<div class="center-text" style="padding-top:40px">' +
+    '<div style="font-size:2rem;margin-bottom:14px">🏰</div>' +
+    '<div class="phase-title" style="color:var(--muted)">SERVER SHUTTING DOWN</div>' +
+    '<p style="font-size:.52rem;color:var(--muted);margin-top:10px">The server has been closed. Close this tab.</p>' +
+    '</div>';
+}
+
+function hexToRgb(hex) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? [parseInt(r[1],16), parseInt(r[2],16), parseInt(r[3],16)] : [100,100,100];
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "generated": "2026-06-06",
+  "note": "Map objects regenerated. Run server and visit /setup to cache locally.",
+  "characters": {
+    "knight":   { "character_id": "74d5e44a-35a0-46cd-acfa-a7a7d53cb285", "south_url": "https://backblaze.pixellab.ai/file/pixellab-characters/b3b53404-3d3a-4268-9eb3-f71905c50f2e/74d5e44a-35a0-46cd-acfa-a7a7d53cb285/rotations/south.png" },
+    "impostor": { "character_id": "73678f99-1104-47b5-8deb-5a974c3f86a5", "south_url": "https://backblaze.pixellab.ai/file/pixellab-characters/b3b53404-3d3a-4268-9eb3-f71905c50f2e/73678f99-1104-47b5-8deb-5a974c3f86a5/rotations/south.png" }
+  },
+  "map_objects": {
+    "writing.png":      { "label": "Quill scroll",         "object_id": "0b0894bf-79e7-4e2a-a460-95b185da2830" },
+    "drawing.png":      { "label": "Artist easel",         "object_id": "92ada771-4a30-4db2-9e17-81b869d8fbe1" },
+    "deliberation.png": { "label": "Tarot cards",          "object_id": "d82d17c4-0847-4083-bd9c-0a2f8ca73e62" },
+    "opinion.png":      { "label": "Speech scroll",        "object_id": "472101dd-f4b6-427b-baca-63982eb896bc" },
+    "bioscanner.png":   { "label": "Crystal orb",          "object_id": "398450fc-1cda-4850-aacf-87a07a005b3e" },
+    "crisis.png":       { "label": "Alarm bell & swords",  "object_id": "12a1826b-eb0b-4e47-8257-2ac1e68a17dc" },
+    "checksum.png":     { "label": "Rune tablet",          "object_id": "fbcb0f40-76b7-4163-9d30-dc9e5ab57eeb" },
+    "quarantine.png":   { "label": "Plague satchel",       "object_id": "555b43d6-2c55-4794-a1c9-c95be10a55fa" },
+    "blackbox.png":     { "label": "Forbidden grimoire",   "object_id": "4e55d4f0-c694-4446-870c-f97b06ba3338" },
+    "pushbutton.png":   { "label": "Wax seal button",      "object_id": "fcaeeaef-328d-422f-bf87-faa93b3efbe4" }
+  }
+}

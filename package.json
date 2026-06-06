@@ -1,0 +1,17 @@
+{
+  "name": "pushthebutton",
+  "version": "1.0.0",
+  "description": "",
+  "main": "download-assets.js",
+  "scripts": {
+    "test": "node check-syntax.js",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
