@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Push The Button</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+img{image-rendering:pixelated}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#06040a;--panel:#1a1208;--panel2:#241a0e;--panel3:#2e2212;
+  --gold:#c9a84c;--gold2:#f0d070;--red:#8b1a1a;--red2:#c0392b;
+  --green:#2e6b3e;--green2:#4a9e6b;--purple:#5b2d8a;--purple2:#9b59b6;
+  --ember:#e8832a;--text:#e8d9b8;--muted:#7a6445;--border:#3d2910;--border2:#5a3d1e;
+  --px:'Press Start 2P',monospace;
+}
+html,body{height:100%;background:var(--bg);overflow:hidden}
+body{font-family:var(--px);color:var(--text);font-size:10px}
+
+/* ── Shell ── */
+#shell{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;background:var(--panel);border-bottom:2px solid var(--border2)}
+#content{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+#bottombar{flex-shrink:0;padding:10px 14px;background:var(--panel);border-top:2px solid var(--border2)}
+
+/* ── Stone panel ── */
+.stone{background:var(--panel);border:2px solid var(--border2);border-radius:4px;padding:14px}
+.gold-border{border-color:var(--gold)}
+.red-border{border-color:var(--red2)}
+.green-border{border-color:var(--green2)}
+.purple-border{border-color:var(--purple2)}
+
+/* ── Typography ── */
+h1{font-size:clamp(.7rem,4vw,.95rem);color:var(--gold);text-shadow:2px 2px 0 #1a0800;letter-spacing:2px;line-height:1.6}
+h2{font-size:clamp(.65rem,3.5vw,.8rem);color:var(--gold2);line-height:1.6}
+h3{font-size:.6rem;color:var(--text)}
+p{font-size:.6rem;line-height:2}
+.muted{color:var(--muted);font-size:.55rem}
+.label{font-size:.5rem;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);border-bottom:1px solid var(--border2);padding-bottom:4px;margin-bottom:8px}
+.divider{height:2px;background:repeating-linear-gradient(90deg,var(--border2) 0,var(--border2) 4px,transparent 4px,transparent 8px);margin:8px 0}
+
+/* ── Buttons ── */
+button{cursor:pointer;border:none;border-radius:4px;font-family:var(--px);font-size:.6rem;
+  padding:12px 18px;transition:all .1s;letter-spacing:1px;width:100%;display:block}
+.btn-primary{background:linear-gradient(180deg,#c9a84c,#7a5c1e);color:#1a0d00;
+  border:2px solid var(--gold2);box-shadow:0 3px 0 #3a2000,inset 0 1px 0 rgba(255,255,255,.15)}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(1px);box-shadow:0 1px 0 #3a2000}
+.btn-danger{background:linear-gradient(180deg,#c0392b,#7a1515);color:#fff;
+  border:2px solid #e74c3c;box-shadow:0 3px 0 #3a0000}
+.btn-danger:active{transform:translateY(1px)}
+.btn-ghost{background:transparent;border:2px solid var(--border2);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-warn{background:linear-gradient(180deg,#e8832a,#9a4a10);color:#fff;border:2px solid #f39c12;box-shadow:0 3px 0 #4a1a00}
+button:disabled{opacity:.35;cursor:default;transform:none!important}
+.btn-sm{padding:8px 12px;font-size:.55rem}
+.btn-row{display:flex;gap:8px}
+.btn-row button{flex:1}
+
+/* ── Input ── */
+input[type=text],input[type=number],select,textarea{
+  background:#0a0806;border:2px solid var(--border2);border-radius:4px;
+  color:var(--text);font-family:var(--px);font-size:.6rem;padding:10px 12px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--gold)}
+label{font-size:.55rem;color:var(--muted);display:block;margin-bottom:4px}
+
+/* ── Role card ── */
+.role-card{border-radius:4px;padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.role-knight{background:linear-gradient(160deg,#0d1e12,#091409);border:3px solid var(--green2);box-shadow:0 0 24px rgba(74,158,107,.2)}
+.role-impostor{background:linear-gradient(160deg,#1a0d24,#0d0814);border:3px solid var(--purple2);box-shadow:0 0 24px rgba(155,89,182,.3)}
+.role-sprite{width:80px;height:80px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.hack-badge{display:inline-block;background:#1a0a24;border:1px solid var(--purple2);color:var(--purple2);border-radius:3px;padding:2px 8px;font-size:.5rem}
+
+/* ── Prompt box ── */
+.prompt-box{background:#0a0806;border-left:4px solid var(--gold);border-radius:0 4px 4px 0;padding:12px 14px;font-size:.6rem;line-height:2;border:1px solid var(--border2);border-left-color:var(--gold);border-left-width:4px}
+.room-vignette{position:relative;min-height:88px;border:2px solid var(--border2);border-radius:4px;overflow:hidden;background:linear-gradient(180deg,#22170b,#080504);box-shadow:inset 0 0 22px rgba(0,0,0,.65);display:flex;align-items:center;gap:12px;padding:10px 12px}
+.room-vignette::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 2px,transparent 2px 28px);pointer-events:none}
+.room-vignette img{width:50px;height:50px;image-rendering:pixelated;filter:drop-shadow(0 5px 0 rgba(0,0,0,.45));position:relative;z-index:1}
+.room-vignette-text{position:relative;z-index:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.room-vignette-title{font-size:.55rem;color:var(--gold2);line-height:1.5;text-transform:uppercase}
+.room-vignette-objective{font-size:.45rem;color:var(--muted);line-height:1.6}
+.room-vignette-props{margin-left:auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:2px;font-size:1rem}
+
+/* ── Room timer ── */
+#room-timer-wrap{text-align:center;padding:8px 0}
+.big-timer{font-size:clamp(1.5rem,8vw,2.5rem);color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,.6)}
+.timer-warn{color:var(--red2);animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── MCQ ── */
+.mcq-option{background:var(--panel2);border:2px solid var(--border2);border-radius:4px;padding:12px 14px;cursor:pointer;font-size:.6rem;transition:all .1s;margin-bottom:6px;line-height:1.8}
+.mcq-option:hover{border-color:var(--gold)}
+.mcq-option.sel{background:#1e1200;border-color:var(--gold);color:var(--gold)}
+
+/* ── Agree scale ── */
+.agree-scale{display:flex;gap:4px;margin:8px 0}
+.agree-btn{flex:1;padding:10px 4px;border:2px solid var(--border2);border-radius:4px;background:var(--panel2);cursor:pointer;font-family:var(--px);font-size:.45rem;text-align:center;transition:all .1s;line-height:1.6}
+.agree-btn:hover{border-color:var(--gold)}
+.agree-btn.sel{background:#1e1200;border-color:var(--gold);color:var(--gold)}
+
+/* ── Deliberation ── */
+.delib-choice{background:var(--panel2);border:2px solid var(--border2);border-radius:4px;padding:12px;cursor:pointer;font-size:.6rem;margin-bottom:6px;transition:all .1s;line-height:1.8}
+.delib-choice:hover{border-color:var(--red2)}
+.delib-choice.sel{background:#200808;border-color:var(--red2);color:var(--red2)}
+
+/* ── Rank list ── */
+.rank-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.rank-item{background:var(--panel2);border:2px solid var(--border2);border-radius:4px;padding:10px 12px;cursor:grab;display:flex;align-items:center;gap:10px;font-size:.55rem;user-select:none}
+.rank-item:active{cursor:grabbing}
+.rank-item.drag-over{border-color:var(--gold)}
+.rank-num{font-size:.75rem;color:var(--gold);min-width:20px}
+.rank-move{padding:4px 8px;font-size:.5rem;background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--muted);width:auto;display:inline-block}
+
+/* ── Bins ── */
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.bin{background:var(--panel2);border:2px dashed var(--border2);border-radius:4px;padding:8px;min-height:80px}
+.bin.drag-on{border-color:var(--gold);background:#1a1200}
+.bin h3{font-size:.5rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.bin-a h3{color:var(--green2)}
+.bin-b h3{color:var(--red2)}
+.sort-chips{display:flex;flex-wrap:wrap;gap:4px}
+.pool{background:var(--panel2);border-radius:4px;padding:8px;margin-bottom:8px;min-height:40px}
+.sort-chip{background:var(--panel);border:1px solid var(--border2);border-radius:20px;padding:4px 10px;font-size:.5rem;cursor:grab;user-select:none;transition:border-color .1s}
+.sort-chip:hover{border-color:var(--gold)}
+
+/* ── Checksum ── */
+.icon-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}
+.icon-cell{aspect-ratio:1;background:var(--panel2);border:2px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.52rem;cursor:pointer;transition:all .1s;text-align:center;line-height:1.35;word-break:break-word;padding:3px}
+.icon-cell:hover,.icon-cell.sel{border-color:var(--gold);background:#1e1200}
+.seq{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.seq-slot{width:56px;height:48px;background:var(--panel2);border:2px dashed var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.52rem;cursor:pointer;text-align:center;line-height:1.35;word-break:break-word;padding:2px}
+.seq-slot.filled{border-style:solid;border-color:var(--gold)}
+
+/* ── Confidence ── */
+.conf-row{display:flex;gap:6px;margin-top:8px}
+.conf-btn{flex:1;padding:10px;border:2px solid var(--border2);border-radius:4px;background:var(--panel2);cursor:pointer;font-family:var(--px);font-size:.5rem;text-align:center;transition:all .1s}
+.conf-btn:hover,.conf-btn.sel{border-color:var(--ember);color:var(--ember)}
+
+/* ── Log snapshot ── */
+.log-snap{background:#070503;border:2px solid var(--gold);border-radius:4px;padding:12px;font-size:.55rem;line-height:2.2;color:var(--gold2)}
+.log-snap span{display:block}
+
+/* ── Canvas ── */
+#draw-canvas{width:100%;background:#070503;border-radius:4px;border:2px solid var(--border2);cursor:crosshair;touch-action:none;display:block}
+
+/* ── Player banner ── */
+.my-banner{display:flex;align-items:center;gap:8px}
+.my-diamond{width:12px;height:12px;transform:rotate(45deg);border-radius:1px}
+
+/* ── Suspect toggle ── */
+.suspect-row{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--panel2);border:2px solid var(--border2);border-radius:4px;cursor:pointer;margin-bottom:6px;transition:all .1s}
+.suspect-row:hover{border-color:var(--red2)}
+.suspect-row.marked{border-color:var(--red2);background:#200808}
+.suspect-row input{display:none}
+
+/* ── Vote btns ── */
+.vote-yes{background:linear-gradient(180deg,var(--green2),#1a4a2e);color:#fff;border:2px solid var(--green2)}
+.vote-no{background:linear-gradient(180deg,var(--red2),#4a0a0a);color:#fff;border:2px solid var(--red2)}
+
+/* ── Waiting screen ── */
+.waiting-icon{font-size:2rem;animation:float 3s ease-in-out infinite}
+.player-list{display:flex;flex-direction:column;gap:6px}
+.player-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:4px;font-size:.55rem}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade{animation:fadeIn .25s ease}
+@keyframes alarm{0%,100%{background:#06040a}50%{background:#1a0606}}
+.alarm-bg{animation:alarm 1s infinite}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--panel)}::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* ── Responsive ── */
+@media(max-width:400px){.bins{grid-template-columns:1fr}.icon-grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div id="topbar">
+    <div class="my-banner" id="my-banner">
+      <div class="my-diamond" id="my-diamond" style="background:var(--muted)"></div>
+      <span id="my-name" style="font-size:.55rem">—</span>
+    </div>
+    <span id="phone-test-badge" style="display:none;font-size:.38rem;color:var(--purple2);border:1px solid var(--purple2);border-radius:3px;padding:1px 5px">🧪 TEST</span>
+    <div id="top-timer" style="font-size:.5rem;color:var(--muted)">⚔ —:——</div>
+  </div>
+  <div id="content"></div>
+  <div id="bottombar" style="display:none">
+    <button class="btn-danger" id="alarm-btn" onclick="pushButton()" style="animation:pulseRed 1.5s infinite">
+      🔔 SOUND THE ALARM
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes pulseRed{0%,100%{box-shadow:0 3px 0 #3a0000,0 0 8px rgba(192,57,43,.3)}50%{box-shadow:0 3px 0 #3a0000,0 0 20px rgba(192,57,43,.8)}}
+</style>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let S={},MY={name:'',color:'var(--muted)',role:null,token:localStorage.getItem('ptb-token')||''},es=null;
+let glyphSeq=[];
+const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const cleanName=v=>String(v||'').trim().replace(/[<>"'`\\]/g,'').slice(0,14);
+
+const ROOM_NAMES={writing:'Writing Chamber',drawing:'Drawing Quarters',deliberation:'Council Chamber',
+  opinion:'Opinion Hall',bioscanner:'Oath Mirror',crisis:'Crisis Council',checksum:'Cipher Relay',
+  quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall'};
+
+// ══════════════════════════════════════════════════════
+// JOIN
+// ══════════════════════════════════════════════════════
+function showJoin(){
+  document.getElementById('content').innerHTML=`
+    <div style="display:flex;flex-direction:column;align-items:center;min-height:calc(100vh - 80px);justify-content:center;gap:0" class="fade">
+
+      <!-- Castle arch decoration -->
+      <div style="text-align:center;margin-bottom:8px">
+        <svg width="220" height="60" viewBox="0 0 220 60" style="opacity:.35">
+          <path d="M0 60 L0 30 Q0 0 20 0 L30 0 L30 20 Q30 8 40 8 Q50 8 50 20 L50 0 L80 0 Q90 0 90 10 L90 60Z" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+          <path d="M220 60 L220 30 Q220 0 200 0 L190 0 L190 20 Q190 8 180 8 Q170 8 170 20 L170 0 L140 0 Q130 0 130 10 L130 60Z" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+          <line x1="90" y1="0" x2="130" y2="0" stroke="#c9a84c" stroke-width="1.5"/>
+          <rect x="100" y="0" width="8" height="12" fill="#c9a84c" opacity=".5"/>
+          <rect x="112" y="0" width="8" height="12" fill="#c9a84c" opacity=".5"/>
+        </svg>
+      </div>
+
+      <!-- Title -->
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:.45rem;color:var(--muted);letter-spacing:.2em;margin-bottom:8px">⚔ A HIDDEN IDENTITY GAME ⚔</div>
+        <h1 style="font-size:clamp(.9rem,5vw,1.3rem);line-height:1.5">PUSH THE<br>BUTTON</h1>
+        <div style="font-size:.45rem;color:var(--muted);letter-spacing:.15em;margin-top:6px">MEDIEVAL EDITION</div>
+      </div>
+
+      <!-- Divider with gems -->
+      <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:280px;margin-bottom:18px">
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2))"></div>
+        <div style="width:8px;height:8px;transform:rotate(45deg);background:var(--gold);border-radius:1px"></div>
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)"></div>
+      </div>
+
+      <!-- Join card -->
+      <div style="width:100%;max-width:320px;background:var(--panel);border:2px solid var(--border2);border-radius:4px;padding:18px;display:flex;flex-direction:column;gap:12px;
+        box-shadow:inset 0 0 20px rgba(0,0,0,.4),0 0 20px rgba(201,168,76,.08)">
+        <label style="font-size:.52rem;color:var(--muted)">Enter thy name, knight:</label>
+        <input type="text" id="name-input" maxlength="14" placeholder="Sir…" autocomplete="off" autofocus
+          onkeydown="if(event.key==='Enter')joinGame()"
+          style="font-size:.65rem;padding:12px">
+        <button class="btn-primary" onclick="joinGame()" style="font-size:.6rem;padding:14px">
+          ⚔ Join the Quest
+        </button>
+      </div>
+
+      <!-- Footer hints -->
+      <div style="margin-top:18px;text-align:center;display:flex;flex-direction:column;gap:6px">
+        <p class="muted" style="font-size:.45rem">🔥 Pass the device — each player joins privately 🔥</p>
+        <p class="muted" style="font-size:.42rem">Host opens /host on the shared screen</p>
+      </div>
+
+      <!-- Bottom decorative stones -->
+      <div style="display:flex;gap:8px;margin-top:16px;opacity:.2">
+        ${Array(7).fill(0).map((_,i)=>`<div style="width:${8+Math.sin(i)*4}px;height:${12+Math.cos(i)*4}px;background:var(--border2);border-radius:1px"></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function joinGame(){
+  const name=cleanName(document.getElementById('name-input')?.value);
+  if(!name)return;
+  MY.name=name;
+  localStorage.setItem('ptb-name',name);
+  connectSSE(name);
+  document.getElementById('my-name').textContent=name;
+}
+
+// ══════════════════════════════════════════════════════
+// SSE
+// ══════════════════════════════════════════════════════
+function connectSSE(name){
+  if(es)es.close();
+  es=new EventSource(`/events?type=player&name=${encodeURIComponent(name)}&token=${encodeURIComponent(MY.token||'')}`);
+  es.addEventListener('state',e=>{
+    const d=JSON.parse(e.data);
+    Object.assign(S,d);
+    if(d.myToken&&d.myToken!==MY.token){MY.token=d.myToken;localStorage.setItem('ptb-token',MY.token);}
+    if(d.myColor){MY.color=d.myColor;document.getElementById('my-diamond').style.background=d.myColor;}
+    if(d.myRole)MY.role=d.myRole;
+    render();
+  });
+  es.addEventListener('role',e=>{
+    const d=JSON.parse(e.data);
+    MY.role=d.role;MY.alienNames=d.alienNames;
+    showRoleReveal(d.role,d.alienNames);
+  });
+  es.addEventListener('prompt',e=>{
+    const d=JSON.parse(e.data);
+    showPrompt(d);
+  });
+  es.addEventListener('tick',e=>{
+    const d=JSON.parse(e.data);
+    if(d.ship!==undefined) updateTopTimer(d.ship,d.shipMax||S.shipTimerMax);
+    if(d.room!==undefined) updateRoomTimer(d.room);
+  });
+  es.addEventListener('shutdown',()=>{
+    es.close();es=null;
+    document.getElementById('content').innerHTML=`
+      <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:40px;text-align:center">
+        <div style="font-size:2.5rem">🏰</div>
+        <h2>Game Server Closed</h2>
+        <p style="font-size:.56rem;color:var(--muted);line-height:2">The host has ended the session.<br>Thanks for playing!</p>
+      </div>`;
+    document.getElementById('bottombar').style.display='none';
+  });
+  es.addEventListener('reset',()=>{
+    MY.name='';MY.role=null;
+    localStorage.removeItem('ptb-name');
+    localStorage.removeItem('ptb-token');MY.token='';
+    document.getElementById('my-name').textContent='—';
+    document.getElementById('my-diamond').style.background='var(--muted)';
+    document.getElementById('bottombar').style.display='none';
+    es.close();es=null;
+    showJoin();
+  });
+  es.onerror=()=>{setTimeout(()=>connectSSE(MY.name),2000);};
+}
+
+function checkSavedRejoin(name){
+  const checkEs=new EventSource(`/events?type=player&join=check&name=${encodeURIComponent(name)}&token=${encodeURIComponent(MY.token||'')}`);
+  let settled=false;
+  const finish=()=>{
+    if(settled)return;
+    settled=true;
+    checkEs.close();
+    showJoin();
+  };
+  checkEs.addEventListener('join-check',e=>{
+    const d=JSON.parse(e.data);
+    settled=true;
+    checkEs.close();
+    if(d.canRejoin){
+      MY.name=name;
+      document.getElementById('my-name').textContent=name;
+      connectSSE(name);
+    } else {
+      localStorage.removeItem('ptb-name');
+      localStorage.removeItem('ptb-token');
+      MY.name='';MY.token='';
+      showJoin();
+    }
+  });
+  checkEs.onerror=finish;
+  setTimeout(finish,1200);
+}
+
+function act(type,data={}){
+  fetch('/action',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type,data,player:MY.name,token:MY.token})});
+}
+
+// ══════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════
+function updateTopTimer(left,max){
+  S.shipTimerLeft=left;S.shipTimerMax=max;
+  const m=Math.floor(left/60),s=left%60;
+  const el=document.getElementById('top-timer');
+  if(el)el.textContent=`⚔ ${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function updateRoomTimer(left){
+  const el=document.getElementById('room-timer');
+  if(!el)return;
+  el.textContent=left;
+  el.className='big-timer'+(left<=5?' timer-warn':'');
+  const warn=document.getElementById('timer-warn');
+  if(warn)warn.style.display=left<=5?'':'none';
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function render(){
+  const content=document.getElementById('content');
+  const bb=document.getElementById('bottombar');
+  const ab=document.getElementById('alarm-btn');
+
+  // Test mode badge
+  const tb=document.getElementById('phone-test-badge');
+  if(tb)tb.style.display=S.testMode?'':'none';
+
+  // Show alarm button only for captain in hub or reveal phase
+  const isCap=S.amCaptain;
+  const alarmPhases=['captain-hub','reveal'];
+  if(S.canPushButton&&alarmPhases.includes(S.phase)){
+    bb.style.display='';if(ab)ab.disabled=false;
+  } else {
+    bb.style.display='none';
+  }
+
+  switch(S.phase){
+    case 'lobby':     renderLobby(content);break;
+    case 'role-reveal':renderWaitForRole(content);break;
+    case 'captain-hub':isCap?renderCaptain(content):renderWaiting(content,'captain-hub');break;
+    case 'room-waiting':
+      if(S.isMyTurn)renderWaitingForTurn(content);
+      else if(S.amTestee&&S.myTesteeIdx>S.roomTesteeIdx)renderWaitingForTurn(content);
+      else renderWaiting(content,'room-waiting');
+      break;
+    case 'room-active':
+      if(S.selectedRoom==='dungeon-trial'){
+        // Simultaneous: prompt already shown; don't clobber it
+        if(!promptState||promptState.roomId!=='dungeon-trial')renderWaiting(content,'room-active');
+      } else if(S.selectedRoom==='throne-vote'){
+        // Simultaneous: prompt already shown via 'prompt' event; don't clobber if waiting
+        if(!promptState||promptState.roomId!=='throne-vote'){
+          if(S.myThroneAnswer!=null)renderWaiting(content,'room-active');
+          // else prompt will arrive via 'prompt' event
+        }
+      } else {
+        if(!S.isMyTurn)renderWaiting(content,'room-active');
+        // prompt screen shown via 'prompt' event
+      }
+      break;
+    case 'dungeon-goblet': renderDungeonGobletPhone(content); break;
+    case 'dungeon-reveal': renderDungeonRevealPhone(content); break;
+    case 'reveal':    renderRevealPhase(content);break;
+    case 'extraction':renderExtraction(content);break;
+    case 'gameover':  renderGameover(content);break;
+  }
+}
+
+// ── Lobby ──────────────────────────────────────────────
+function renderLobby(el){
+  const players=S.players||[];
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stone gold-border" style="text-align:center">
+        <div class="label">Quest Status</div>
+        <p style="color:var(--ember)">Awaiting the sovereign's decree…</p>
+        <p class="muted" style="margin-top:6px">${players.length}/10 knights joined</p>
+      </div>
+      <div class="stone">
+        <div class="label">Warriors in the keep</div>
+        <div class="player-list">
+          ${players.map(p=>`<div class="player-row">
+            <div style="width:8px;height:8px;transform:rotate(45deg);background:${p.color};border-radius:1px;flex-shrink:0"></div>
+            <span style="color:${p.color}">${esc(p.name)}</span>
+            ${p.name===MY.name?'<span class="muted" style="margin-left:auto">(you)</span>':''}
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="stone" style="border-color:var(--purple2);text-align:center">
+        <div style="font-size:.42rem;color:var(--purple2);letter-spacing:.12em;margin-bottom:6px">🧪 SOLO TESTING</div>
+        <p class="muted" style="font-size:.48rem;margin-bottom:10px">Fill with bots and start immediately — test every room alone.</p>
+        <button id="test-mode-btn" class="btn-primary" style="background:rgba(155,89,182,.2);border-color:var(--purple2);color:var(--purple2);font-size:.55rem" onclick="startTestMode(this)">
+          🧪 Start Test Mode
+        </button>
+      </div>
+    </div>`;
+}
+
+function startTestMode(btn){
+  btn.disabled=true;
+  btn.textContent='Starting…';
+  act('test-mode');
+}
+
+// ── Waiting for role reveal ─────────────────────────────
+function renderWaitForRole(el){
+  el.innerHTML=`
+    <div class="fade" style="text-align:center;padding-top:20px;display:flex;flex-direction:column;align-items:center;gap:16px">
+      <div class="waiting-icon">🌑</div>
+      <h2>Destiny Awaits</h2>
+      <p class="muted">Thy role is about to be revealed. Make sure no one else can see thy screen.</p>
+      <div class="stone" style="width:100%">
+        <p style="font-size:.6rem;color:var(--ember)">Wait for the sovereign to pass the device, then tap below.</p>
+        <button class="btn-primary" style="margin-top:10px" onclick="showRoleRevealFromState()">Reveal my role ›</button>
+      </div>
+    </div>`;
+}
+
+function showRoleRevealFromState(){
+  if(MY.role)showRoleReveal(MY.role,MY.alienNames);
+}
+
+// ── Role reveal ─────────────────────────────────────────
+function showRoleReveal(role,alienNames){
+  const isAlien=role==='alien';
+  document.getElementById('content').innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:10px">
+      <div class="role-card ${isAlien?'role-impostor':'role-knight'}" style="width:100%;max-width:340px">
+        <img class="role-sprite"
+          src="${isAlien?'/assets/impostor.png':'/assets/knight.png'}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display=''"
+          alt="${isAlien?'traitor':'knight'}">
+        <div style="display:none;font-size:3rem">${isAlien?'🌑':'⚔️'}</div>
+        <h2 style="color:${isAlien?'var(--purple2)':'var(--green2)'}">${isAlien?'CASTLE TRAITOR':'TRUE KNIGHT'}</h2>
+        <p class="muted" style="text-align:center">
+          ${isAlien
+            ?`Thou art one of the hidden traitors. Thou hast 2 dark arts.<br>Fellow traitors: <span style="color:var(--purple2)">${esc((alienNames||[]).filter(n=>n!==MY.name).join(', ')||'none')}</span>`
+            :'Thou art a loyal knight. Expose all traitors before the quest timer expires.'}
+        </p>
+        ${isAlien?`<span class="hack-badge">🌑 2 dark arts available</span>`:''}
+      </div>
+      <button class="btn-ghost" style="font-size:.55rem" onclick="act('role-seen');renderWaiting(document.getElementById('content'),'role-reveal')">
+        Hide &amp; confirm seen ›
+      </button>
+    </div>`;
+}
+
+// ── General waiting ─────────────────────────────────────
+function renderWaiting(el,phase){
+  const cap=S.captainName;
+  const capColor=(S.players||[]).find(p=>p.name===cap)?.color||'var(--gold)';
+  const msgs={
+    'captain-hub':`<span style="color:${capColor}">${esc(cap||'?')}</span> is choosing the trial chamber…`,
+    'room-waiting':'The trial chamber is being prepared…',
+    'room-active':S.selectedRoom==='dungeon-trial'
+      ?`The dungeon trial is underway — <span style="color:var(--gold)">${S.dungeon?.answerCount||0}/${(S.selectedTestees||[]).length}</span> have answered…`
+      :S.selectedRoom==='throne-vote'
+        ?`The Throne Room — all knights are rating… <span style="color:var(--gold)">${S.throneVote?.answerCount||0}/${(S.selectedTestees||[]).length}</span> submitted`
+        :`<span style="color:var(--ember)">${esc(S.currentTestee||'?')}</span> is being tested…`,
+    'role-reveal':'Awaiting all knights to view their destiny…',
+  };
+  const infoBtn=S.selectedRoom&&['room-waiting','room-active'].includes(phase)?`
+    <button onclick="showRoomInfo()" style="margin-top:6px;background:none;border:1px solid var(--border2);color:var(--muted);font-size:.45rem;padding:5px 12px;border-radius:3px;cursor:pointer;font-family:var(--px)">
+      📖 Room Guide
+    </button>`:'';
+  const extras={
+    'room-active':S.selectedRoomName?`<div class="stone" style="margin-top:8px;text-align:center"><span class="label">Current Chamber</span><p style="color:var(--gold2)">${esc(S.selectedRoomName)}</p></div>`:''
+  };
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:20px;text-align:center">
+      ${S.isCursedSpirit?`<div class="stone" style="border-color:var(--ember);padding:8px 14px;margin-bottom:4px"><span style="font-size:.48rem;color:var(--ember)">☠ CURSED SPIRIT — thou canst watch but not act</span></div>`:''}
+      <div class="waiting-icon">⚔️</div>
+      <p style="font-size:.6rem;line-height:2">${msgs[phase]||'Awaiting next trial…'}</p>
+      ${extras[phase]||''}
+      ${infoBtn}
+      ${MY.role==='alien'&&!S.isCursedSpirit&&['captain-hub','reveal'].includes(phase)?renderHackPanel():''}
+    </div>`;
+}
+
+function renderWaitingForTurn(el){
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:20px;text-align:center">
+      <div class="waiting-icon" style="animation:pulse .8s infinite">🗡️</div>
+      <h2>Prepare Thyself</h2>
+      <p style="font-size:.6rem;color:var(--ember)">Thy trial approaches.<br>Keep thy device hidden from others.</p>
+    </div>`;
+}
+
+// ── Captain hub ─────────────────────────────────────────
+function renderCaptain(el){
+  const rooms=[
+    {id:'writing',name:'Writing Chamber',icon:'writing',desc:'Short social tells'},
+    {id:'drawing',name:'Drawing Quarters',icon:'drawing',desc:'Visual contradiction'},
+    {id:'deliberation',name:'Council Chamber',icon:'deliberation',desc:'Same choices, different crisis'},
+    {id:'opinion',name:'Opinion Hall',icon:'opinion',desc:'Suspicious values'},
+    {id:'bioscanner',name:'Oath Mirror',icon:'bioscanner',desc:'Hack-immune oath check'},
+    {id:'crisis',name:'Crisis Council',icon:'crisis',desc:'Debatable priorities'},
+    {id:'checksum',name:'Cipher Relay',icon:'checksum',desc:'Hackable memory codes'},
+    {id:'quarantine',name:'Apothecary Ward',icon:'quarantine',desc:'Sort by hidden criteria'},
+    {id:'blackbox',name:'Royal Archive Recall',icon:'blackbox',desc:'Late memory contradiction',latePool:true},
+    {id:'royal-whisper',name:'The Royal Whisper',icon:'writing',desc:'Word clue: loyal hear truth, traitors hear a lie'},
+    {id:'dungeon-trial',name:'The Dungeon Trial',icon:'deliberation',desc:'All answer at once — wrong answers face the poisoned goblet'},
+    {id:'herald-chain',name:"The Herald's Chain",icon:'writing',desc:'Pass a word — alien starts from a different seed'},
+    {id:'throne-vote',name:'The Throne Room',icon:'deliberation',desc:'Rate a statement — different statements expose the alien'},
+  ].filter(r=>!(r.latePool&&(S.round||0)<3&&!S.testMode));
+
+  const selRoom=S.selectedRoom;
+  const selTestees=S.selectedTestees||[];
+  const cap=MY.name;
+  const potentialTestees=(S.players||[]).filter(p=>p.alive&&p.name!==cap);
+  const roomDef=rooms.find(r=>r.id===selRoom);
+  const [mn,mx]=roomDef?[roomDef.id==='bioscanner'||roomDef.id==='checksum'?2:2,roomDef.id==='bioscanner'||roomDef.id==='checksum'?2:4]:[2,4];
+  const canLaunch=selRoom&&selTestees.length>=mn&&selTestees.length<=mx;
+
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stone gold-border">
+        <div class="label">⚔ Thou Art Sovereign — Round ${S.round||'?'}</div>
+        <p class="muted">Choose a trial chamber and select knights to test.</p>
+        ${S.testMode&&MY.role?`<p style="font-size:.46rem;margin-top:6px;color:${MY.role==='alien'?'var(--purple2)':'var(--green2)'}">🧪 Thy role: ${MY.role==='alien'?'CASTLE TRAITOR':'TRUE KNIGHT'}</p>`:''}
+      </div>
+
+      <div class="stone">
+        <div class="label">Trial Chambers</div>
+        ${rooms.map(r=>`
+          <div onclick="act('room-select',{roomId:'${r.id}'})"
+            style="display:flex;align-items:center;gap:10px;padding:10px 10px;margin-bottom:5px;
+            background:var(--panel2);border:2px solid ${r.id===selRoom?'var(--gold)':'var(--border2)'};
+            border-radius:4px;cursor:pointer;transition:all .1s;
+            ${r.id===selRoom?'background:#1e1200;':''}"
+          >
+            <img src="/assets/${r.icon}.png" style="width:28px;height:28px" onerror="this.style.display='none'">
+            <div>
+              <div style="font-size:.55rem;color:${r.id===selRoom?'var(--gold2)':'var(--text)'}">${r.name}</div>
+              <div style="font-size:.45rem;color:var(--muted)">${r.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <div class="stone">
+        <div class="label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Select Knights (${mn === mx ? 'exactly ' + mn : mn + '–' + mx})</span>
+          ${S.testMode&&selRoom?`<button class="btn-ghost" style="font-size:.4rem;padding:4px 9px" onclick="quickAddBots()">🤖 Add bots</button>`:''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${potentialTestees.map(p=>{
+            const sel=selTestees.includes(p.name);
+            return`<div onclick="act('testee-toggle',{name:'${p.name}'})"
+              style="padding:7px 12px;border-radius:4px;cursor:pointer;font-size:.55rem;transition:all .1s;
+              background:${sel?p.color+'22':'var(--panel2)'};border:2px solid ${sel?p.color:'var(--border2)'};color:${sel?p.color:'var(--text)'}">${esc(p.name)}${p.isBot?' 🤖':''}</div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      ${MY.role==='alien'?renderHackPanel():''}
+
+      <button class="btn-primary" ${canLaunch?'':'disabled'} onclick="act('launch-room')">
+        ⚔ Enter Chamber ›
+      </button>
+    </div>`;
+}
+
+function quickAddBots(){
+  // Toggle-select all bot players as testees (up to max allowed)
+  const room=S.selectedRoom;if(!room)return;
+  const bots=(S.players||[]).filter(p=>p.isBot&&p.alive&&p.name!==MY.name);
+  const already=S.selectedTestees||[];
+  // Figure out how many slots remain; max 4, need at least 2
+  // Just toggle each bot that isn't already selected
+  bots.forEach(p=>{
+    if(!already.includes(p.name))act('testee-toggle',{name:p.name});
+  });
+}
+
+function renderHackPanel(){
+  const targets=(S.players||[]).filter(p=>p.alive&&p.name!==MY.name&&!(S.activeHacks&&S.activeHacks[p.name]));
+  const used=S.usedHacks||0;const left=2-used;
+  const myHexes=Object.entries(S.activeHacks||{}).filter(([,h])=>h===MY.name);
+  return`<details class="stone purple-border" style="margin-top:4px">
+    <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding:2px 0">
+      <span style="font-size:.5rem;color:var(--purple2);letter-spacing:.1em">🌑 Dark Arts</span>
+      <span style="font-size:.45rem;color:${left>0?'var(--purple2)':'var(--muted)'}">${left} left — tap to use ›</span>
+    </summary>
+    <div style="margin-top:10px">
+      ${myHexes.length?`<p class="muted" style="font-size:.5rem;margin-bottom:8px">Active hexes: ${myHexes.map(([t])=>`<span style="color:var(--purple2)">${esc(t)}</span>`).join(', ')}</p>`:''}
+      ${left>0&&targets.length?`
+        <select id="hack-target" style="margin-bottom:8px"><option value="">Choose target…</option>
+          ${targets.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('')}
+        </select>
+        <button class="btn-warn btn-sm" style="width:auto" onclick="applyHack()">Hex target</button>
+      `:`<p class="muted">${left<=0?'No dark arts remaining.':'No valid targets.'}</p>`}
+    </div>
+  </details>`;
+}
+
+function applyHack(){
+  const t=document.getElementById('hack-target')?.value;
+  if(t)act('apply-hack',{target:t});
+}
+
+// ── Prompt screen ────────────────────────────────────────
+function renderRoomVignette(d){
+  const rooms={
+    writing:{icon:'writing',props:['📜','✒️'],objective:'Write a court answer'},
+    drawing:{icon:'drawing',props:['🎨','🖼️'],objective:'Draw the hidden prompt'},
+    deliberation:{icon:'deliberation',props:['⚖️','👑'],objective:'Choose under pressure'},
+    opinion:{icon:'opinion',props:['🗣️','⚜️'],objective:'Reveal suspicious values'},
+    bioscanner:{icon:'bioscanner',props:['🪞','🔔'],objective:'Match the sacred seals'},
+    crisis:{icon:'crisis',props:['🔥','🛡️'],objective:'Rank the castle crisis'},
+    checksum:{icon:'checksum',props:['🔐','🗝️'],objective:'Recall the cipher order'},
+    quarantine:{icon:'quarantine',props:['🌿','⚗️'],objective:'Sort suspicious items'},
+    blackbox:{icon:'blackbox',props:['📚','🔎'],objective:'Remember the castle record'},
+    'herald-chain':{icon:'writing',props:['📜','🔗'],objective:'Pass the word — match the theme'},
+    'throne-vote':{icon:'deliberation',props:['👑','⚖️'],objective:'Rate the statement in secret'},
+  };
+  const r=rooms[d.roomId]||{icon:'pushbutton',props:['🏰','⚔️'],objective:'Complete the chamber trial'};
+  return `<div class="room-vignette">
+    <img src="/assets/${r.icon}.png" onerror="this.style.display='none'" alt="">
+    <div class="room-vignette-text">
+      <div class="room-vignette-title">${esc(d.roomName||'Castle Chamber')}</div>
+      <div class="room-vignette-objective">${esc(r.objective)}</div>
+    </div>
+    <div class="room-vignette-props">${r.props.map(p=>`<span>${p}</span>`).join('')}</div>
+  </div>`;
+}
+
+let promptState=null;
+function showPrompt(d){
+  promptState=d;glyphSeq=[];
+  const el=document.getElementById('content');
+  // Pin submit button in the fixed bottombar — always reachable no matter how long the content is
+  const bb=document.getElementById('bottombar');
+  bb.innerHTML=`<button class="btn-primary" onclick="submitAnswer()" style="font-size:.6rem;padding:14px">⚔ Submit Answer ›</button>`;
+  bb.style.display='';
+
+  let inputHtml='';
+  switch(d.roomId){
+    case 'writing':
+      inputHtml=`<textarea id="ans" rows="4" placeholder="Write thy answer…" maxlength="120" style="resize:vertical"></textarea>`;break;
+    case 'drawing':
+      inputHtml=`<canvas id="draw-canvas" height="200"></canvas>
+        <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+          <button class="btn-ghost btn-sm" style="width:auto" onclick="clearCanvas()">Clear</button>
+          <input type="color" id="draw-color" value="#c9a84c" style="width:36px;height:28px;border:none;background:none;cursor:pointer">
+        </div>`;break;
+    case 'deliberation':
+      inputHtml=`<div class="delib-choices">${(d.choices||[]).map((c,i)=>`
+        <div class="delib-choice" onclick="selectDelib(this,'${c.replace(/'/g,"\\'")}')">
+          <span style="color:var(--gold)">${'ABC'[i]}.</span> ${c}
+        </div>`).join('')}</div><input type="hidden" id="ans" value="">`;break;
+    case 'opinion':
+      inputHtml=`<div class="agree-scale">
+        ${['Strongly\nDisagree','Disagree','Neutral','Agree','Strongly\nAgree'].map((l,i)=>`
+          <div class="agree-btn" onclick="selectAgree(this,${i})">${l}</div>`).join('')}
+      </div><input type="hidden" id="ans" value="">`;break;
+    case 'royal-whisper':{
+      const loyal=d.isLoyal!==false;
+      const word=d.secretWord||'???';
+      inputHtml=`
+        <div style="background:${loyal?'#090f0b':'#0f0708'};border:2px solid ${loyal?'var(--green2)':'var(--purple2)'};border-radius:4px;padding:14px 16px;margin-bottom:4px">
+          <div style="font-size:.42rem;color:${loyal?'var(--green2)':'var(--purple2)'};letter-spacing:.15em;margin-bottom:8px">${loyal?'🟢 ROYAL MESSAGE':'🌑 CURSED MESSAGE'}</div>
+          <p style="font-size:.58rem;color:var(--muted);line-height:2;margin-bottom:10px">
+            ${loyal?'Thou art loyal to the kingdom.':'Dark magic hath twisted the royal message.'}
+          </p>
+          <div style="background:rgba(0,0,0,.5);border:1px solid ${loyal?'var(--green2)':'var(--purple2)'};border-radius:3px;padding:10px 14px;text-align:center;margin-bottom:10px">
+            <div style="font-size:.4rem;color:var(--muted);letter-spacing:.18em;margin-bottom:5px">SECRET WORD</div>
+            <div style="font-size:1.1rem;color:${loyal?'var(--gold2)':'var(--purple2)'};letter-spacing:.1em;text-shadow:0 0 14px ${loyal?'rgba(201,168,76,.5)':'rgba(155,89,182,.5)'}">${esc(word)}</div>
+          </div>
+          <p style="font-size:.48rem;color:var(--muted);line-height:1.8">Give one clue connected to this word.<br>Do not write the word itself.</p>
+        </div>
+        <textarea id="ans" rows="2" maxlength="30" placeholder="Thy one clue…" style="resize:none" oninput="updateClueCount(this)"></textarea>
+        <div style="display:flex;justify-content:space-between;margin-top:3px">
+          <span style="font-size:.42rem;color:var(--muted)">max 30 characters</span>
+          <span id="clue-count" style="font-size:.42rem;color:var(--muted)">30 left</span>
+        </div>`;
+      break;}
+    case 'dungeon-trial':{
+      const opts=(d.options||[]).map((o,i)=>`
+        <div class="mcq-option" id="dopt-${i}" onclick="submitDungeonAnswer(${i})">${['A','B','C','D'][i]}. ${esc(o)}</div>`).join('');
+      inputHtml=`
+        <div style="background:rgba(80,10,10,.45);border:2px solid var(--ember);border-radius:4px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:.4rem;color:var(--ember);letter-spacing:.18em;margin-bottom:8px">☠ THE DUNGEON TRIAL</div>
+          <p style="font-size:.62rem;color:var(--text2);line-height:1.8;margin-bottom:10px">${esc(d.question||'?')}</p>
+          <div id="dungeon-opts">${opts}</div>
+        </div>`;
+      // Override bottombar — we submit via MCQ tap, no separate button needed
+      bb.style.display='none';
+      break;}
+    case 'bioscanner':case 'checksum':
+      inputHtml=`<div class="seq" id="seq">
+        <div class="seq-slot" id="slot-0" onclick="removeGlyph(0)">?</div>
+        <div class="seq-slot" id="slot-1" onclick="removeGlyph(1)">?</div>
+        <div class="seq-slot" id="slot-2" onclick="removeGlyph(2)">?</div>
+      </div>
+      <div class="icon-grid">
+        ${(d.items||[]).map(ic=>`<div class="icon-cell" onclick="addGlyph('${ic}')">${ic}</div>`).join('')}
+      </div><input type="hidden" id="ans" value="">`;break;
+    case 'crisis':
+      const items=[...(d.items||[])];
+      inputHtml=`<p class="muted" style="margin-bottom:6px">Drag or tap ↑↓ to rank highest→lowest priority.</p>
+        <ul class="rank-list" id="rank-list">
+          ${items.map((it,i)=>`<li class="rank-item" draggable="true" data-val="${it}">
+            <span class="rank-num">${i+1}</span><span style="flex:1">${it}</span>
+            <button class="rank-move" onclick="rankMove(this,-1)">↑</button>
+            <button class="rank-move" onclick="rankMove(this,1)">↓</button>
+          </li>`).join('')}
+        </ul><input type="hidden" id="ans" value="">`;break;
+    case 'quarantine':
+      const qitems=[...(d.items||[])];
+      const lbl=d.labels||{a:'A',b:'B'};
+      inputHtml=`<p class="muted" style="margin-bottom:6px">Drag or tap to cycle: pool → A → B → pool.</p>
+        <div class="pool sort-chips" id="q-pool">
+          ${qitems.map(it=>`<div class="sort-chip" draggable="true" data-val="${it}" onclick="cycleChip(this)">${it}</div>`).join('')}
+        </div>
+        <div class="bins">
+          <div class="bin bin-a" id="bin-a"><h3>${lbl.a}</h3><div class="sort-chips" id="bin-a-items"></div></div>
+          <div class="bin bin-b" id="bin-b"><h3>${lbl.b}</h3><div class="sort-chips" id="bin-b-items"></div></div>
+        </div><input type="hidden" id="ans" value="">`;break;
+    case 'herald-chain':{
+      const isFirst=d.isFirst;
+      const chainWord=d.chainWord||'???';
+      inputHtml=`
+        <div style="background:rgba(20,40,60,.5);border:2px solid var(--gold);border-radius:4px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:.4rem;color:var(--gold);letter-spacing:.18em;margin-bottom:8px">🔗 THE HERALD'S CHAIN</div>
+          ${isFirst
+            ? `<p style="font-size:.5rem;color:var(--muted);margin-bottom:6px">Thou art first in the chain — thy seed word is:</p>`
+            : `<p style="font-size:.5rem;color:var(--muted);margin-bottom:6px">The previous knight's word was:</p>`}
+          <div style="font-size:1.3rem;text-align:center;color:var(--gold2);letter-spacing:.1em;padding:10px 0">${esc(chainWord)}</div>
+          <p style="font-size:.46rem;color:var(--muted);margin-top:6px;line-height:1.8">Write one word that naturally follows from this word. Do not use the same word.</p>
+        </div>
+        <input type="text" id="ans" maxlength="30" placeholder="Thy word…" autocomplete="off" style="text-align:center;font-size:.9rem;letter-spacing:.08em">`;
+      break;}
+    case 'throne-vote':{
+      const stmt=d.statement||'…';
+      inputHtml=`
+        <div style="background:rgba(60,20,80,.5);border:2px solid var(--purple2);border-radius:4px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-size:.4rem;color:var(--purple2);letter-spacing:.18em;margin-bottom:8px">👑 THE THRONE ROOM</div>
+          <p style="font-size:.62rem;color:var(--text2);line-height:1.8;margin-bottom:10px">"${esc(stmt)}"</p>
+          <p style="font-size:.46rem;color:var(--muted)">Rate thy agreement — 1 star (strongly disagree) to 5 stars (strongly agree)</p>
+        </div>
+        <div style="display:flex;justify-content:center;gap:12px;margin:10px 0" id="star-row">
+          ${[1,2,3,4,5].map(n=>`<div id="star-${n}" onclick="selectStar(${n})" style="font-size:1.8rem;cursor:pointer;opacity:.45;transition:all .15s">★</div>`).join('')}
+        </div>
+        <input type="hidden" id="ans" value="">`;
+      // Override bottombar — submit on star tap
+      bb.innerHTML=`<button class="btn-primary" id="star-submit" onclick="submitAnswer()" style="font-size:.6rem;padding:14px" disabled>★ Submit Rating ›</button>`;
+      bb.style.display='';
+      break;}
+    case 'blackbox':
+      const snap=d.snapshot||{};const header=snap.header;
+      const rows=Object.entries(snap).filter(([k])=>k!=='header');
+      inputHtml=`<div class="log-snap" id="log-snap">
+          <span style="color:var(--ember);font-weight:700">${header}</span>
+          ${rows.map(([k,v])=>`<span><span style="color:var(--gold)">${k}:</span> ${v}</span>`).join('')}
+        </div>
+        <p class="muted" id="snap-note">Memorise this log. Disappears in <span id="snap-count">5</span>s.</p>
+        <div id="bb-q" style="display:none">
+          <p style="font-size:.6rem;margin:8px 0">${d.question}</p>
+          <div>${(d.options||[]).map(o=>`<div class="mcq-option" onclick="selectMCQ(this,'${o.replace(/'/g,"\\'")}' )">${o}</div>`).join('')}</div>
+          <p class="muted" style="margin-top:8px;margin-bottom:4px">How confident art thou?</p>
+          <div class="conf-row">
+            <div class="conf-btn" onclick="selConf(this,'low')">Low</div>
+            <div class="conf-btn" onclick="selConf(this,'medium')">Med</div>
+            <div class="conf-btn" onclick="selConf(this,'high')">High</div>
+          </div>
+        </div>
+        <input type="hidden" id="bb-mcq" value=""><input type="hidden" id="bb-conf" value="medium">`;break;
+  }
+
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      ${renderRoomVignette(d)}
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="label">${d.roomName||'Trial Chamber'}</div>
+          <div id="room-timer-wrap"><span id="room-timer" class="big-timer">${d.timerSeconds||30}</span></div>
+          <div id="timer-warn" style="display:none;font-size:.5rem;color:var(--red2)">⚠ Time runneth thin!</div>
+        </div>
+        <button onclick="showRoomInfo()" style="background:none;border:1px solid var(--border2);color:var(--muted);font-size:.45rem;padding:5px 10px;border-radius:3px;cursor:pointer;font-family:var(--px);flex-shrink:0">📖 ?</button>
+      </div>
+      ${d.text?`<div class="prompt-box">${esc(d.text)}</div>`:''}
+      <div id="input-area">${inputHtml}</div>
+    </div>`;
+
+  if(d.roomId==='drawing')setTimeout(initCanvas,50);
+  if(d.roomId==='crisis')setTimeout(initRankDrag,50);
+  if(d.roomId==='quarantine')setTimeout(initBinDrag,50);
+  if(d.roomId==='blackbox')startBlackboxCountdown();
+}
+
+function getAnswer(){
+  const d=promptState;if(!d)return'';
+  if(d.roomId==='drawing'){const c=document.getElementById('draw-canvas');return c?c.toDataURL('image/png'):'';}
+  if(d.roomId==='crisis'){const l=document.getElementById('rank-list');return l?[...l.querySelectorAll('.rank-item')].map(i=>i.dataset.val).join(' > '):'';}
+  if(d.roomId==='quarantine'){
+    const a=[...document.getElementById('bin-a-items')?.querySelectorAll('.sort-chip')||[]].map(c=>c.dataset.val);
+    const b=[...document.getElementById('bin-b-items')?.querySelectorAll('.sort-chip')||[]].map(c=>c.dataset.val);
+    return JSON.stringify({a,b});
+  }
+  if(d.roomId==='blackbox'){
+    return`${document.getElementById('bb-mcq')?.value||''} (${document.getElementById('bb-conf')?.value||'medium'} confidence)`;
+  }
+  return document.getElementById('ans')?.value||'';
+}
+
+function updateClueCount(el){
+  const rem=30-el.value.length;
+  const cnt=document.getElementById('clue-count');
+  if(cnt){cnt.textContent=rem+' left';cnt.style.color=rem<=5?'var(--red2)':'var(--muted)';}
+}
+
+function selectStar(n){
+  document.getElementById('ans').value=n;
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById('star-'+i);
+    if(el)el.style.opacity=i<=n?'1':'0.25';
+  }
+  const btn=document.getElementById('star-submit');
+  if(btn)btn.disabled=false;
+}
+
+function submitAnswer(){
+  const ans=(getAnswer()||'').trim();
+  if(!ans)return;
+  // Client-side guard for royal-whisper
+  if(promptState?.roomId==='royal-whisper'&&ans.length>30)return;
+  // Throne-vote sends rating as a number
+  if(promptState?.roomId==='throne-vote'){
+    act('submit-answer',{rating:parseInt(ans,10)||1});
+  } else {
+    act('submit-answer',{answer:ans});
+  }
+  // Restore bottombar to alarm button (hidden until phase allows it)
+  const bb=document.getElementById('bottombar');
+  bb.innerHTML=`<button class="btn-danger" id="alarm-btn" onclick="pushButton()" style="animation:pulseRed 1.5s infinite">🔔 SOUND THE ALARM</button>`;
+  bb.style.display='none';
+  renderWaiting(document.getElementById('content'),'room-active');
+}
+
+// ── Player Room Info Modal ──────────────────────────────────
+const ROOM_TUTORIALS={
+  writing:{goal:'Answer a secret question. Humans get one version; the alien gets a subtly different version.',playerHint:'Keep thy answer short and natural. If thy question feels odd, thou might be the alien.'},
+  drawing:{goal:'Draw a hidden prompt. Humans draw the same thing; the alien draws something related but different.',playerHint:'Draw quickly. Aliens often add extra detail — keep it simple.'},
+  deliberation:{goal:'Answer a moral dilemma. Humans get one framing; the alien gets the opposite.',playerHint:'Answer naturally. Overthinking sounds suspicious.'},
+  opinion:{goal:"Share a hot-take. The alien's topic is a subtle variation that reveals different values.",playerHint:'Sound confident even if thy topic felt different.'},
+  bioscanner:{goal:"Match a sequence of symbols. The alien's sequence has one symbol swapped.",playerHint:'Memorise thy sequence. A unique symbol means thou art the alien.'},
+  crisis:{goal:"Rank castle crises by urgency. The alien's list has one crisis replaced.",playerHint:"Rank confidently. If thou dost not recognise an item, it may be thy alien crisis."},
+  checksum:{goal:"Recall a cipher sequence. The alien's sequence is slightly different.",playerHint:'Focus hard. Trust thy memory even if something feels off.'},
+  quarantine:{goal:"Sort items into two groups. The alien's sorting key is inverted.",playerHint:'Sort decisively. A swapped sort is the most common alien tell.'},
+  blackbox:{goal:"Answer questions about a record. The alien heard a different record.",playerHint:'Listen carefully. One detail in thy record may differ.'},
+  'royal-whisper':{goal:'Give one clue about a secret word. The alien receives a different word.',playerHint:'Make thy clue genuine but vague. Mimic the human clue style.'},
+  'dungeon-trial':{goal:'Answer a trivia question. Wrong-answerers face the Poisoned Goblet — one goblet is cursed.',playerHint:'Think before thou taps — no changing thy answer. Cursed Spirits lose their vote.'},
+  'herald-chain':{goal:'Pass a word one by one. The alien starts from a different seed word — spot who broke the theme.',playerHint:'Associate naturally. A sudden theme shift reveals the alien.'},
+  'throne-vote':{goal:'Rate a statement 1–5 stars. The alien sees a different statement — wildly different ratings expose them.',playerHint:'Rate honestly for thy statement. A rating that mismatches the discussion is suspicious.'},
+};
+
+function showRoomInfo(){
+  const roomId=S.selectedRoom;
+  const t=ROOM_TUTORIALS[roomId];
+  if(!t){return;}
+  const existing=document.getElementById('room-info-modal');
+  if(existing){existing.remove();return;}
+  const modal=document.createElement('div');
+  modal.id='room-info-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0 0 20px';
+  modal.innerHTML=`
+    <div style="background:var(--panel);border:2px solid var(--border2);border-radius:8px 8px 4px 4px;width:100%;max-width:460px;padding:18px 16px;font-family:var(--px)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:.52rem;color:var(--gold);letter-spacing:.1em">📖 ROOM GUIDE</span>
+        <button onclick="document.getElementById('room-info-modal').remove()" style="background:none;border:1px solid var(--border2);color:var(--muted);font-size:.5rem;padding:3px 8px;cursor:pointer;font-family:var(--px)">✕</button>
+      </div>
+      <div style="font-size:.45rem;color:var(--muted);letter-spacing:.08em;margin-bottom:4px">GOAL</div>
+      <p style="font-size:.5rem;color:var(--text);line-height:1.8;margin-bottom:10px">${esc(t.goal)}</p>
+      <div style="font-size:.45rem;color:var(--gold);letter-spacing:.08em;margin-bottom:4px">⚔ KNIGHT'S HINT</div>
+      <p style="font-size:.5rem;color:var(--gold2);line-height:1.8">${esc(t.playerHint)}</p>
+    </div>`;
+  modal.addEventListener('click',e=>{ if(e.target===modal)modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+// ── Dungeon Trial phone screens ────────────────────────────
+function submitDungeonAnswer(idx){
+  if(S.myDungeonAnswer!=null)return; // already answered
+  act('submit-answer',{answerIndex:idx});
+  // Visually mark choice and show waiting state
+  document.querySelectorAll('.mcq-option').forEach((el,i)=>{
+    el.style.pointerEvents='none';
+    if(i===idx)el.style.background='var(--ember)';
+    else el.style.opacity='0.4';
+  });
+  document.getElementById('content').insertAdjacentHTML('beforeend',
+    `<div class="stone" style="margin-top:10px;text-align:center;font-size:.55rem;color:var(--gold)">⏳ Waiting for the other knights…</div>`);
+  promptState=null; // consumed
+}
+
+function chooseGoblet(gi){
+  if(S.myGobletChoice!=null)return;
+  act('choose-goblet',{gobletIndex:gi});
+}
+
+function renderDungeonGobletPhone(el){
+  const d=S.dungeon||{};
+  const isWrong=(d.wrongPlayers||[]).includes(MY.name);
+  const chose=S.myGobletChoice;
+  if(!isWrong){
+    el.innerHTML=`<div class="fade">
+      <div class="stone gold-border" style="text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:8px">✓</div>
+        <div class="label">Thou answered correctly</div>
+        <p style="font-size:.56rem;color:var(--green2);margin-top:4px">Thou art safe. Watch thy companions choose their fate…</p>
+      </div>
+      <div style="text-align:center;margin-top:16px;font-size:1.8rem">🍷 🍷</div>
+      <p class="muted" style="text-align:center;font-size:.5rem;margin-top:6px">${(d.wrongPlayers||[]).join(', ')} must choose…</p>
+    </div>`;
+    return;
+  }
+  if(chose!=null){
+    const label=['A','B'][chose];
+    el.innerHTML=`<div class="fade">
+      <div class="stone" style="border-color:var(--ember);text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:6px">🍷</div>
+        <div class="label" style="color:var(--ember)">Thou chose Goblet ${label}</div>
+        <p class="muted" style="margin-top:6px">The fates are being decided…</p>
+      </div>
+    </div>`;
+    return;
+  }
+  el.innerHTML=`<div class="fade">
+    <div class="stone" style="border-color:var(--ember);text-align:center">
+      <div style="font-size:.4rem;color:var(--ember);letter-spacing:.18em;margin-bottom:8px">☠ THE POISONED GOBLET</div>
+      <p style="font-size:.58rem;color:var(--text2);line-height:2;margin-bottom:14px">Thou answered wrongly.<br>One goblet holds poison. Choose wisely.</p>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:4px">
+        <button class="btn-primary" style="font-size:.65rem;padding:16px 22px" onclick="chooseGoblet(0)">🍷 A</button>
+        <button class="btn-primary" style="font-size:.65rem;padding:16px 22px" onclick="chooseGoblet(1)">🍷 B</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderDungeonRevealPhone(el){
+  const d=S.dungeon||{};
+  const cursed=d.cursedThisRound||[];
+  const isCursedNow=cursed.includes(MY.name);
+  const wasWrong=(d.wrongPlayers||[]).includes(MY.name);
+  let icon,color,headline,sub;
+  if(!wasWrong){icon='✓';color='var(--green2)';headline='Thou answered correctly';sub='Well done, knight.';}
+  else if(isCursedNow){icon='☠';color='var(--ember)';headline='CURSED SPIRIT';sub='The poison courseth through thee. Thou art now a cursed spirit — thou mayest still watch.';}
+  else{icon='💧';color='var(--gold)';headline='Thou survived';sub='The goblet held no poison for thee. Thou livest on.';}
+  el.innerHTML=`<div class="fade">
+    <div class="stone" style="border-color:${color};text-align:center;padding:24px">
+      <div style="font-size:2.2rem;margin-bottom:8px">${icon}</div>
+      <div class="label" style="color:${color}">${headline}</div>
+      <p class="muted" style="margin-top:8px;font-size:.52rem;line-height:2">${sub}</p>
+    </div>
+    ${S.isCursedSpirit?`<div class="stone" style="border-color:var(--ember);text-align:center;margin-top:10px"><p style="font-size:.48rem;color:var(--ember)">☠ CURSED SPIRIT — thou canst watch but not act</p></div>`:''}
+  </div>`;
+}
+
+// ── Reveal phase ──────────────────────────────────────────
+function renderRevealPhase(el){
+  const h=S.probeHistory||[];const last=h[h.length-1];
+  if(!last){el.innerHTML='<p class="muted">Awaiting results…</p>';return;}
+  const answers=S.answers||{};
+  const myEntry=(last.entries||[]).find(e=>e.player===MY.name);
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stone gold-border">
+        <div class="label">📜 Trial Results — ${ROOM_NAMES[last.room]||last.room}</div>
+        <p class="muted">The TV screen shows all answers. Discuss!</p>
+      </div>
+      ${myEntry?`<div class="stone">
+        <div class="label">Thy answer</div>
+        <p style="font-size:.6rem;color:var(--gold2);line-height:2">${formatAns(last.room,myEntry.answer)}</p>
+      </div>`:''}
+      ${MY.role==='alien'&&!S.isCursedSpirit?renderHackPanel():''}
+      ${S.testMode?`<button class="btn-primary" style="margin-top:4px" onclick="act('continue')">⚔ Next Round ›</button>`:''}
+    </div>`;
+}
+
+function formatAns(room,ans){
+  if(room==='drawing'&&ans?.startsWith('data:image'))return`<img src="${ans}" style="max-width:160px;border-radius:3px">`;
+  if(room==='quarantine'){try{const d=JSON.parse(ans);return`A:${d.a?.join(', ')||'—'} | B:${d.b?.join(', ')||'—'}`;}catch{}}
+  return esc(ans||'—');
+}
+
+// ── Extraction ────────────────────────────────────────────
+function renderExtraction(el){
+  el.classList?.add('alarm-bg');
+  const ext=S.extraction||{};
+  const alive=(S.players||[]).filter(p=>p.alive);
+  const myVote=ext.votes?.[MY.name];
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stone red-border" style="text-align:center">
+        <h2 style="color:var(--red2)">🔔 THE ALARM IS SOUNDED</h2>
+        <p class="muted">${esc(ext.pusher||'?')} has sounded the alarm!</p>
+      </div>
+
+      ${S.canMarkSuspects?`
+        <div class="stone">
+          <div class="label">Mark thy suspects for the dungeon:</div>
+          ${alive.map(p=>{
+            const marked=(ext.suspects||[]).includes(p.name);
+            return`<div class="suspect-row${marked?' marked':''}" onclick="act('mark-suspect',{name:'${p.name}'})">
+              <div style="width:10px;height:10px;transform:rotate(45deg);background:${p.color};border-radius:1px"></div>
+              <span style="color:${p.color}">${esc(p.name)}</span>
+              ${marked?'<span style="margin-left:auto;color:var(--red2);font-size:.5rem">MARKED</span>':''}
+            </div>`;
+          }).join('')}
+        </div>
+        <p class="muted" style="text-align:center">Everyone votes on their phone once suspects are marked.</p>
+      `:`
+        <div class="stone" style="text-align:center">
+          <p style="font-size:.6rem;color:var(--ember)">Awaiting the accuser's suspect list.</p>
+          ${ext.suspects?.length?`<p style="margin-top:8px;font-size:.6rem">Suspects: <span style="color:var(--red2)">${esc(ext.suspects.join(', '))}</span></p>`:''}
+        </div>
+      `}
+      ${ext.suspects?.length?`
+        <div class="stone">
+          <div class="label">Cast thy vote</div>
+          <div class="btn-row">
+            <button class="vote-yes" onclick="act('vote-eject',{approve:true})" ${myVote===true?'disabled':''}>Eject</button>
+            <button class="vote-no" onclick="act('vote-eject',{approve:false})" ${myVote===false?'disabled':''}>Spare</button>
+          </div>
+          <p class="muted" style="text-align:center;margin-top:8px">${myVote===undefined?'No vote cast yet.':`You voted ${myVote?'EJECT':'SPARE'}.`}</p>
+        </div>`:''}
+    </div>`;
+}
+
+// ── Game over ─────────────────────────────────────────────
+function renderGameover(el){
+  const reason=S.gameOverReason;
+  const humansWin=reason==='humansWin';
+  const roles=S.roleNames||[];
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:10px;text-align:center">
+      <div style="font-size:3rem">${humansWin?'🏆':'👽'}</div>
+      <h1 style="color:${humansWin?'var(--green2)':'var(--purple2)'}">${humansWin?'CASTLE SAVED!':reason==='humanEjected'?'TRAITORS WIN!':'CASTLE FALLS!'}</h1>
+        <p class="muted">${humansWin?'The castle holds.':reason==='humanEjected'?'An innocent was condemned.':'The traitors seized the castle.'}</p>
+      ${roles.length?`<div class="stone" style="width:100%;text-align:left">
+        <div class="label">All roles revealed</div>
+        ${roles.map(p=>`<div class="player-row">
+          <span>${p.role==='alien'?'🌑':'⚔️'}</span>
+          <span style="color:${(S.players||[]).find(x=>x.name===p.name)?.color||'#fff'}">${p.name}</span>
+          <span style="margin-left:auto;font-size:.5rem;color:${p.role==='alien'?'var(--purple2)':'var(--green2)'}">${p.role==='alien'?'TRAITOR':'KNIGHT'}</span>
+          ${!p.alive?'<span class="muted" style="font-size:.45rem">cast out</span>':''}
+        </div>`).join('')}
+      </div>`:''}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// ALARM BUTTON
+// ══════════════════════════════════════════════════════
+function pushButton(){act('push-button');}
+
+// ══════════════════════════════════════════════════════
+// INPUT HELPERS
+// ══════════════════════════════════════════════════════
+function selectDelib(el,val){document.querySelectorAll('.delib-choice').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');document.getElementById('ans').value=val;}
+function selectAgree(el,idx){document.querySelectorAll('.agree-btn').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');const l=['Strongly Disagree','Disagree','Neutral','Agree','Strongly Agree'];document.getElementById('ans').value=l[idx];}
+function selectMCQ(el,val){document.querySelectorAll('.mcq-option').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');document.getElementById('bb-mcq').value=val;}
+function selConf(el,val){document.querySelectorAll('.conf-btn').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');document.getElementById('bb-conf').value=val;}
+
+function addGlyph(ic){
+  if(glyphSeq.length>=3)glyphSeq.shift();
+  glyphSeq.push(ic);
+  for(let i=0;i<3;i++){const s=document.getElementById(`slot-${i}`);if(s){s.textContent=glyphSeq[i]||'?';s.className=glyphSeq[i]?'seq-slot filled':'seq-slot';}}
+  document.getElementById('ans').value=glyphSeq.join(' ');
+}
+function removeGlyph(i){glyphSeq.splice(i,1);for(let j=0;j<3;j++){const s=document.getElementById(`slot-${j}`);if(s){s.textContent=glyphSeq[j]||'?';s.className=glyphSeq[j]?'seq-slot filled':'seq-slot';}}document.getElementById('ans').value=glyphSeq.join(' ');}
+
+function initCanvas(){
+  const c=document.getElementById('draw-canvas');if(!c)return;
+  c.width=c.offsetWidth;c.height=200;
+  const ctx=c.getContext('2d');let drawing=false,lx=0,ly=0;
+  function pos(e){const r=c.getBoundingClientRect(),sx=c.width/r.width,sy=c.height/r.height;if(e.touches)return[(e.touches[0].clientX-r.left)*sx,(e.touches[0].clientY-r.top)*sy];return[(e.clientX-r.left)*sx,(e.clientY-r.top)*sy];}
+  c.addEventListener('mousedown',e=>{drawing=true;[lx,ly]=pos(e);});
+  c.addEventListener('touchstart',e=>{e.preventDefault();drawing=true;[lx,ly]=pos(e);},{passive:false});
+  const draw=e=>{if(!drawing)return;const[x,y]=pos(e);ctx.strokeStyle=document.getElementById('draw-color')?.value||'#c9a84c';ctx.lineWidth=2;ctx.lineCap='square';ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();[lx,ly]=[x,y];};
+  c.addEventListener('mousemove',draw);
+  c.addEventListener('touchmove',e=>{e.preventDefault();draw(e);},{passive:false});
+  c.addEventListener('mouseup',()=>drawing=false);c.addEventListener('touchend',()=>drawing=false);
+}
+function clearCanvas(){const c=document.getElementById('draw-canvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);}
+
+function initRankDrag(){
+  const list=document.getElementById('rank-list');if(!list)return;
+  let drag=null;
+  list.querySelectorAll('.rank-item').forEach(item=>{
+    item.addEventListener('dragstart',()=>{drag=item;item.style.opacity='.4';});
+    item.addEventListener('dragend',()=>{drag=null;item.style.opacity='1';updateRankNums();});
+    item.addEventListener('dragover',e=>{e.preventDefault();item.classList.add('drag-over');});
+    item.addEventListener('dragleave',()=>item.classList.remove('drag-over'));
+    item.addEventListener('drop',()=>{if(drag&&drag!==item){const items=[...list.querySelectorAll('.rank-item')];items.indexOf(drag)<items.indexOf(item)?item.after(drag):item.before(drag);}item.classList.remove('drag-over');updateRankNums();});
+  });
+}
+function updateRankNums(){document.querySelectorAll('.rank-item').forEach((i,n)=>i.querySelector('.rank-num').textContent=n+1);}
+function rankMove(btn,dir){const item=btn.closest('.rank-item');const items=[...item.parentElement.querySelectorAll('.rank-item')];const i=items.indexOf(item);const ni=i+dir;if(ni<0||ni>=items.length)return;dir<0?items[ni].before(item):items[ni].after(item);updateRankNums();}
+
+function initBinDrag(){
+  function drag(pool){pool.querySelectorAll('.sort-chip').forEach(c=>{c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.dataset.val);c.style.opacity='.4';});c.addEventListener('dragend',()=>c.style.opacity='1');});}
+  function drop(zone,targetId){
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-on');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('drag-on'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-on');const val=e.dataTransfer.getData('text/plain');const chip=document.querySelector(`.sort-chip[data-val="${val}"]`);if(chip)document.getElementById(targetId).appendChild(chip);});
+  }
+  const pool=document.getElementById('q-pool');const binA=document.getElementById('bin-a');const binB=document.getElementById('bin-b');
+  if(!pool||!binA||!binB)return;
+  drag(pool);drop(binA,'bin-a-items');drop(binB,'bin-b-items');drop(pool,'q-pool');
+}
+function cycleChip(chip){
+  const inA=document.getElementById('bin-a-items')?.contains(chip);
+  const inB=document.getElementById('bin-b-items')?.contains(chip);
+  if(!inA&&!inB)document.getElementById('bin-a-items')?.appendChild(chip);
+  else if(inA)document.getElementById('bin-b-items')?.appendChild(chip);
+  else document.getElementById('q-pool')?.appendChild(chip);
+}
+
+function startBlackboxCountdown(){
+  let t=5;const snap=document.getElementById('log-snap');const cnt=document.getElementById('snap-count');
+  if(!snap||!cnt)return;
+  const iv=setInterval(()=>{t--;if(cnt)cnt.textContent=t;if(t<=0){clearInterval(iv);if(snap)snap.style.display='none';const q=document.getElementById('bb-q');if(q)q.style.display='';const n=document.getElementById('snap-note');if(n)n.style.display='none';}},1000);
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+const savedName=localStorage.getItem('ptb-name');
+if(savedName&&MY.token)checkSavedRejoin(savedName);
+else showJoin();
+</script>
+</body>
+</html>

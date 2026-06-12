@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Push The Button — Host Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #05030d;
+  --stone-dk:  #0e0c1a;
+  --stone-md:  #181628;
+  --stone-lt:  #22203a;
+  --floor:     #1a1630;
+  --floor2:    #13112a;
+  --panel:     #0c0a1e;
+  --gold:      #c9a84c;
+  --gold2:     #f0d070;
+  --gold3:     #ffe99a;
+  --red:       #8b1a1a;
+  --red2:      #cc2030;
+  --red3:      #ff3040;
+  --text:      #e8d9c8;
+  --text2:     #c0a87a;
+  --muted:     #5a4e70;
+  --border:    #1e1a38;
+  --border2:   #2e2850;
+  --border3:   #3e3868;
+  --ember:     #e87828;
+  --fire:      #ff6010;
+  --green:     #00c860;
+  --blue:      #3c8cf0;
+  --yellow:    #f0a01e;
+  --purple:    #9040d8;
+  --teal:      #00deb0;
+  --torch-c:   #ff7820;
+  --font-cin:  'Cinzel Decorative', serif;
+  --font-rg:   'Cinzel', serif;
+  --font-px:   'Press Start 2P', monospace;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-rg); font-size: 28px; overflow: hidden; }
+
+/* ════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+#wrap {
+  display: grid;
+  grid-template-rows: 100px 1fr 180px;
+  height: 100vh; width: 100vw;
+}
+
+/* ── HEADER / BATTLEMENTS ── */
+#header {
+  position: relative; z-index: 20;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #0d0b20 0%, #08061a 100%);
+  border-bottom: 3px solid #2e2850;
+  box-shadow: 0 4px 24px rgba(0,0,0,.7), 0 1px 0 rgba(201,168,76,.12);
+  overflow: hidden;
+}
+/* Battlements along top */
+#header::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 8px;
+  background: repeating-linear-gradient(90deg,
+    #22203a 0px, #22203a 14px, transparent 14px, transparent 22px);
+}
+#header::after {
+  content: '';
+  position: absolute; top: 8px; left: 0; right: 0; height: 1px;
+  background: rgba(201,168,76,.22);
+}
+.hdr-title {
+  font-family: var(--font-cin); font-size: 1.15rem;
+  color: var(--gold2); letter-spacing: .15em;
+  text-shadow: 0 0 22px rgba(240,208,112,.55), 0 2px 4px rgba(0,0,0,.8);
+}
+.hdr-sub { font-size: .42rem; color: var(--muted); letter-spacing: .16em; font-family: var(--font-rg); }
+.hdr-torch {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 8px var(--torch-c));
+  animation: flicker 2.4s ease-in-out infinite;
+}
+.hdr-torch.r { animation-delay: 1.1s; }
+@keyframes flicker {
+  0%,100%{opacity:.95;transform:scale(1)   scaleX(1)}
+  25%    {opacity:.7; transform:scale(.94) scaleX(.9)}
+  50%    {opacity:.9; transform:scale(1.04)scaleX(1.05)}
+  75%    {opacity:.65;transform:scale(.97) scaleX(.92)}
+}
+#hdr-back {
+  position: absolute; left: 12px;
+  font-size: .38rem; color: var(--muted);
+  background: none; border: 1px solid var(--border3);
+  padding: 5px 10px; cursor: pointer;
+  font-family: var(--font-px); border-radius: 2px;
+  transition: all .15s;
+}
+#hdr-back:hover { color: var(--gold); border-color: var(--gold); }
+
+/* ── CONTENT ROW ── */
+#content {
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  min-height: 0;
+}
+
+/* ════════════════════════════════════════════
+   LEFT PANEL — GAME STATUS
+═══════════════════════════════════════════ */
+#status-panel {
+  background: linear-gradient(170deg, #0f0d22, #0a0818);
+  border-right: 3px solid #2e2850;
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+/* Stone texture overlay */
+#status-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,.22) 28px, rgba(0,0,0,.22) 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 44px, rgba(0,0,0,.15) 44px, rgba(0,0,0,.15) 46px);
+  opacity: .5;
+}
+.panel-head {
+  padding: 10px 12px 8px;
+  border-bottom: 2px solid var(--border3);
+  background: linear-gradient(180deg, rgba(201,168,76,.08), transparent);
+  position: relative; flex-shrink: 0; z-index: 1;
+}
+.panel-head::after {
+  content: ''; position: absolute; bottom: -1px; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,.4), transparent);
+}
+.panel-title {
+  font-family: var(--font-cin); font-size: .6rem;
+  color: var(--gold); letter-spacing: .1em; text-align: center;
+  text-shadow: 0 0 12px rgba(201,168,76,.4);
+}
+.panel-scroll {
+  flex: 1; overflow-y: auto; padding: 10px 10px 8px;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  position: relative; z-index: 1;
+}
+
+/* Parchment stat card */
+.parchment {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+    linear-gradient(155deg, #1e1a34 0%, #14112a 60%, #1a162e 100%);
+  border: 1px solid var(--border3);
+  border-radius: 2px; padding: 10px 11px;
+  margin-bottom: 10px; position: relative;
+}
+.parchment::before, .parchment::after {
+  content: '✦'; position: absolute; font-size: .4rem; color: rgba(201,168,76,.3); line-height: 1;
+}
+.parchment::before { top: 3px; left: 5px; }
+.parchment::after  { top: 3px; right: 5px; }
+
+.stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.stat-row:last-child { margin-bottom: 0; }
+.stat-label { font-size: .33rem; color: var(--muted); letter-spacing: .12em; font-family: var(--font-rg); }
+.stat-val   { font-size: .48rem; color: var(--text2); font-family: var(--font-rg); }
+.stat-val.big   { font-size: .8rem; color: var(--gold2); text-shadow: 0 0 10px rgba(240,208,112,.4); font-family: var(--font-cin); }
+.stat-val.timer { font-size: .85rem; color: var(--red3); text-shadow: 0 0 12px rgba(255,48,64,.5); font-family: var(--font-px); font-variant-numeric: tabular-nums; }
+.stat-div { height: 1px; background: linear-gradient(90deg, transparent, var(--border3), transparent); margin: 4px 0; }
+
+.phase-badge {
+  background: rgba(201,168,76,.06);
+  border: 1px solid rgba(201,168,76,.22);
+  border-radius: 2px; padding: 7px 8px;
+  font-size: .35rem; color: var(--gold);
+  letter-spacing: .06em; line-height: 1.9; text-align: center;
+  font-family: var(--font-rg);
+}
+.herald-div {
+  display: flex; align-items: center; gap: 6px; margin: 6px 0;
+}
+.herald-div::before, .herald-div::after { content:''; flex:1; height:1px; }
+.herald-div::before { background: linear-gradient(90deg,transparent,var(--border3)); }
+.herald-div::after  { background: linear-gradient(90deg,var(--border3),transparent); }
+.herald-gem { font-size: .6rem; line-height: 1; }
+
+.wall-torch {
+  display: flex; align-items: center; gap: 5px;
+  margin: 6px 0; padding: 5px 8px;
+  background: rgba(255,120,32,.04);
+  border-left: 2px solid rgba(255,120,32,.25);
+}
+.wt-fire { font-size: .85rem; animation: flicker 2s ease-in-out infinite; filter: drop-shadow(0 0 5px var(--torch-c)); }
+.wt-text { font-size: .32rem; color: rgba(255,180,60,.7); font-family: var(--font-rg); letter-spacing: .05em; }
+
+/* ════════════════════════════════════════════
+   CASTLE MAP — CENTER
+═══════════════════════════════════════════ */
+#castle-map {
+  position: relative; overflow: hidden;
+}
+
+/* Outer stone wall — interlocking bricks */
+.map-outer-wall {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-color: #060414;
+  background-image:
+    /* Horizontal mortar */
+    repeating-linear-gradient(0deg, transparent, transparent 22px, rgba(0,0,0,.55) 22px, rgba(0,0,0,.55) 24px),
+    /* Vertical mortar even-row bricks */
+    repeating-linear-gradient(90deg, transparent, transparent 36px, rgba(0,0,0,.4) 36px, rgba(0,0,0,.4) 38px),
+    /* Brick face tone variation */
+    repeating-linear-gradient(180deg, rgba(255,255,255,.018) 0px, rgba(0,0,0,.05) 22px),
+    /* Slight blue-purple tint to suggest old stone */
+    radial-gradient(ellipse at 50% 50%, rgba(30,20,60,.25) 0%, transparent 80%);
+}
+
+/* Inner vignette darkening corners */
+.map-vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,.75) 100%);
+}
+
+/* Ember particles container */
+.map-embers { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+.ember {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,140,20,.95) 0%, rgba(255,80,0,.5) 40%, transparent 70%);
+  animation: drift linear infinite; opacity: 0;
+}
+@keyframes drift {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  8%   { opacity: .8; }
+  85%  { opacity: .25; }
+  100% { transform: translateY(-110vh) translateX(var(--dx)); opacity: 0; }
+}
+
+/* Castle wall frame with crenellations */
+.map-castle-border {
+  position: absolute; inset: 8px; pointer-events: none; z-index: 6;
+  border: 4px solid rgba(46,40,80,.75);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 70px rgba(0,0,0,.6),
+    inset 0 0 140px rgba(0,0,0,.3),
+    0 0 0 1px rgba(201,168,76,.07);
+}
+.map-castle-border::before {
+  content: '';
+  position: absolute; top: -8px; left: 10px; right: 10px; height: 8px;
+  background: repeating-linear-gradient(90deg,
+    rgba(46,40,80,.9) 0px, rgba(46,40,80,.9) 10px,
+    transparent 10px, transparent 18px);
+}
+.map-castle-border::after {
+  content: '';
+  position: absolute; bottom: -8px; left: 10px; right: 10px; height: 8px;
+  background: repeating-linear-gradient(90deg,
+    rgba(46,40,80,.9) 0px, rgba(46,40,80,.9) 10px,
+    transparent 10px, transparent 18px);
+}
+
+/* ── Room Grid ── */
+#room-grid {
+  position: absolute; inset: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 10px;
+  z-index: 3;
+  transform: translate(var(--map-pan-x, 0px), var(--map-pan-y, 0px));
+  transition: transform .55s cubic-bezier(.22,.68,.18,1);
+  will-change: transform;
+}
+
+/* ── ROOM CELL ── */
+.room-cell { position: relative; border-radius: 2px; overflow: visible; display: flex; flex-direction: column; transition: box-shadow .3s; }
+
+/* Stone wall cell — thick, dark */
+.room-cell.wall {
+  border-radius: 2px;
+  background-color: #06040f;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(0,0,0,.5) 18px, rgba(0,0,0,.5) 20px),
+    repeating-linear-gradient(90deg, transparent, transparent 28px, rgba(0,0,0,.35) 28px, rgba(0,0,0,.35) 30px),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.011) 0px, rgba(0,0,0,.04) 18px);
+}
+
+/* Room interior — flagstone floor */
+.room-cell.room {
+  background-color: #16142c;
+  background-size: cover;
+  background-position: center top;
+  border: 2px solid var(--border3);
+  box-shadow: inset 0 0 24px rgba(0,0,0,.6), inset 0 0 8px rgba(0,0,0,.4);
+}
+/* Dark overlay so UI elements stay legible over the pixel art images */
+.room-img-overlay {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,.52) 100%);
+  border-radius: 1px;
+}
+
+.room-cell.room.is-active {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px rgba(201,168,76,.5), inset 0 0 16px rgba(201,168,76,.07);
+}
+
+/* ── Camera focus: when players are physically inside a chamber, the map
+   "zooms" attention onto that room and dims the rest of the castle ── */
+#room-grid.has-focus .room-cell.room {
+  transition: transform .5s cubic-bezier(.22,.68,0,1.1), opacity .5s ease, filter .5s ease, box-shadow .5s ease, z-index 0s;
+}
+#room-grid.has-focus .room-cell.room:not(.is-focused) {
+  opacity: .38; filter: grayscale(.55) brightness(.6); transform: scale(.97);
+}
+#room-grid.has-focus .room-cell.room.is-focused {
+  transform: scale(1.14); z-index: 30;
+  border-color: var(--gold2);
+  box-shadow: 0 0 6px rgba(0,0,0,.6), 0 0 46px rgba(240,208,112,.65), inset 0 0 22px rgba(240,208,112,.12);
+  animation: focusPulse 2.6s ease-in-out infinite;
+}
+@keyframes focusPulse {
+  0%,100% { box-shadow: 0 0 6px rgba(0,0,0,.6), 0 0 40px rgba(240,208,112,.55), inset 0 0 22px rgba(240,208,112,.1); }
+  50%     { box-shadow: 0 0 6px rgba(0,0,0,.6), 0 0 56px rgba(240,208,112,.8),  inset 0 0 22px rgba(240,208,112,.16); }
+}
+
+/* Per-room radial glow overlay */
+.room-cell.room::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 78%, var(--rt, transparent) 0%, transparent 62%);
+  animation: roomBreath 4s ease-in-out infinite; border-radius: 1px;
+}
+@keyframes roomBreath { 0%,100%{opacity:.45} 50%{opacity:.95} }
+
+[data-theme="writing"]       { --rt: rgba(201,168,76,.2);  }
+[data-theme="drawing"]       { --rt: rgba(140,80,200,.18); }
+[data-theme="deliberation"]  { --rt: rgba(180,30,30,.22);  }
+[data-theme="opinion"]       { --rt: rgba(220,150,30,.17); }
+[data-theme="bioscanner"]    { --rt: rgba(0,210,170,.22);  }
+[data-theme="crisis"]        { --rt: rgba(220,80,0,.22);   }
+[data-theme="checksum"]      { --rt: rgba(40,110,230,.17); }
+[data-theme="quarantine"]    { --rt: rgba(40,180,40,.17);  }
+[data-theme="blackbox"]      { --rt: rgba(100,40,180,.2);  }
+[data-theme="royal-whisper"] { --rt: rgba(201,168,76,.24); }
+[data-theme="dungeon-trial"] { --rt: rgba(150,0,0,.28);    }
+[data-theme="herald-chain"]  { --rt: rgba(40,100,220,.2);  }
+[data-theme="throne-vote"]   { --rt: rgba(130,60,200,.22); }
+
+/* ── ARCHWAY ── */
+.room-arch {
+  position: absolute; top: -13px; left: 10%; right: 10%;
+  height: 17px;
+  background: #0c0a1e;
+  border: 2px solid var(--border3); border-bottom: none;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+}
+.room-arch::before {
+  content: ''; position: absolute; bottom: -1px; left: -2px; right: -2px; height: 3px;
+  background: var(--stone-lt); border-top: 1px solid rgba(201,168,76,.14);
+}
+.arch-gem { font-size: .5rem; line-height: 1; margin-bottom: -1px; }
+
+/* ── ROOM NAME PLATE ── */
+.room-name {
+  font-family: var(--font-rg);
+  font-size: clamp(.23rem, .82vw, .37rem);
+  color: var(--gold2); letter-spacing: .04em;
+  padding: 4px 5px 3px; text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.38) 100%);
+  border-bottom: 1px solid rgba(201,168,76,.12);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  position: relative; z-index: 3; flex-shrink: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+}
+
+/* ── WALL TORCHES ── */
+.rc-torch {
+  position: absolute; top: 20px;
+  font-size: clamp(.65rem, 1.7vw, .95rem);
+  z-index: 4; pointer-events: none;
+  animation: flicker 2.6s ease-in-out infinite;
+}
+.rc-torch.l { left: 5px;  }
+.rc-torch.r { right: 5px; animation-delay: 1.3s; }
+/* Iron bracket below torch */
+.rc-torch::after {
+  content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 7px;
+  background: linear-gradient(180deg, #3a3030, #1a1010);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ── HANGING BANNERS ── */
+.room-banner { position: absolute; top: 17px; z-index: 3; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
+.banner-l { left: 18px; }
+.banner-r { right: 18px; }
+.banner-rod    { width: 13px; height: 3px; background: linear-gradient(90deg, #2a2020, #4a4040, #2a2020); border-radius: 2px; margin-bottom: 1px; }
+.banner-fabric { width: 9px; min-height: 18px; border-radius: 0 0 35% 35%; opacity: .65; clip-path: polygon(0 0, 100% 0, 100% 82%, 50% 100%, 0 82%); }
+
+/* ── WATERMARK ICON ── */
+.room-icon { position: absolute; right: 5px; bottom: 12px; font-size: clamp(.65rem, 2vw, 1.3rem); opacity: .09; z-index: 1; pointer-events: none; line-height: 1; }
+
+/* ── TOKEN AREA ── */
+.room-tokens { flex: 1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 3px; padding: 4px 18px 14px; position: relative; z-index: 3; }
+
+/* ── TRIAL BANNER ── */
+.room-trial-banner {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 6;
+  background: rgba(201,168,76,.14); border-top: 1px solid rgba(201,168,76,.38);
+  font-size: .26rem; color: var(--gold); letter-spacing: .14em; text-align: center; padding: 2px;
+  font-family: var(--font-rg); animation: blink 1.3s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ════════════════════════════════════════════
+   CENTER BUTTON ROOM
+═══════════════════════════════════════════ */
+.room-cell.btn-room {
+  background-color: #0a0415;
+  background-image:
+    repeating-linear-gradient(0deg,  transparent, transparent 15px, rgba(0,0,0,.42) 15px, rgba(0,0,0,.42) 16px),
+    repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,0,0,.3)  19px, rgba(0,0,0,.3)  20px),
+    radial-gradient(ellipse at 50% 62%, rgba(200,10,10,.14) 0%, transparent 65%);
+  border-color: rgba(180,20,20,.5);
+}
+.btn-room.alarm { border-color: var(--red3); animation: alarmPulse 1s ease-in-out infinite; }
+@keyframes alarmPulse {
+  0%,100%{box-shadow:0 0 22px rgba(255,48,64,.35),inset 0 0 10px rgba(200,0,0,.08)}
+  50%    {box-shadow:0 0 52px rgba(255,48,64,.85),inset 0 0 28px rgba(200,0,0,.14)}
+}
+.btn-room .room-name { color: var(--red3); border-color: rgba(200,20,20,.25); }
+
+.big-btn { font-size: clamp(1.1rem, 3.5vw, 1.9rem); text-align: center; filter: drop-shadow(0 0 8px rgba(255,0,0,.75)); animation: btnPulse 2.3s ease-in-out infinite; }
+@keyframes btnPulse { 0%,100%{filter:drop-shadow(0 0 6px rgba(255,0,0,.6));transform:scale(1)} 50%{filter:drop-shadow(0 0 20px rgba(255,0,0,1));transform:scale(1.07)} }
+.btn-label { font-size: .25rem; color: var(--red3); letter-spacing: .1em; text-align: center; margin-top: 2px; font-family: var(--font-rg); }
+
+/* Chandelier */
+.chandelier { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
+.ch-chain { width: 2px; height: 7px; background: linear-gradient(180deg, #555, #333); }
+.ch-ring  { width: 28px; height: 7px; border: 2px solid #444; border-radius: 50%; background: rgba(0,0,0,.6); display: flex; justify-content: space-around; align-items: center; padding: 0 3px; }
+.ch-candle { font-size: .42rem; filter: drop-shadow(0 0 3px var(--torch-c)); animation: flicker 2.1s ease-in-out infinite; }
+.ch-candle:nth-child(2) { animation-delay: .7s; }
+.ch-candle:nth-child(3) { animation-delay: 1.4s; }
+
+/* ════════════════════════════════════════════
+   PLAYER TOKENS
+═══════════════════════════════════════════ */
+.p-token { display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: default; }
+.p-avatar { width: clamp(11px,1.8vw,20px); height: clamp(11px,1.8vw,20px); border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; transition: box-shadow .2s; }
+.p-dot  { width: clamp(4px,.8vw,8px); height: clamp(4px,.8vw,8px); border-radius: 50%; }
+.p-name { font-size: clamp(.19rem,.48vw,.29rem); text-align: center; text-shadow: 1px 1px 0 #000,-1px -1px 0 #000; white-space: nowrap; max-width: 27px; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-rg); }
+
+.ps-in-room .p-avatar { background: rgba(0,200,80,.14);  border-color: #00c860; box-shadow: 0 0 8px rgba(0,200,80,.55); }
+.ps-captain .p-avatar { background: rgba(201,168,76,.17); border-color: var(--gold); box-shadow: 0 0 10px rgba(201,168,76,.65); }
+.ps-waiting .p-avatar { background: rgba(240,160,30,.1);  border-color: #f0a01e; }
+.ps-moving  .p-avatar { background: rgba(60,140,240,.13); border-color: #3c8cf0; box-shadow: 0 0 8px rgba(60,140,240,.5); animation: movePulse .9s ease-in-out infinite; }
+@keyframes movePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.14)} }
+.ps-cursed  .p-avatar { background: rgba(180,0,0,.14);    border-color: #cc2010; box-shadow: 0 0 7px rgba(200,0,0,.5); filter: grayscale(.4); }
+.ps-dead    .p-avatar { background: rgba(50,50,50,.08);   border-color: #2a2a2a; opacity: .35; }
+
+/* ════════════════════════════════════════════
+   RIGHT PANEL — LEGEND
+═══════════════════════════════════════════ */
+#legend-panel {
+  background: linear-gradient(170deg, #0f0d22, #0a0818);
+  border-left: 3px solid #2e2850;
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+#legend-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,.22) 28px, rgba(0,0,0,.22) 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 44px, rgba(0,0,0,.15) 44px, rgba(0,0,0,.15) 46px);
+  opacity: .5;
+}
+.legend-scroll { flex: 1; overflow-y: auto; padding: 10px; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; position: relative; z-index: 1; }
+
+.sect-title { font-size: .3rem; color: rgba(201,168,76,.6); letter-spacing: .12em; margin: 8px 0 5px; display: flex; align-items: center; gap: 5px; font-family: var(--font-rg); }
+.sect-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.ls-item { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.ls-dot  { width: 11px; height: 11px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+.ls-label { font-size: .32rem; color: var(--text2); font-family: var(--font-rg); }
+
+.lr-row  { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.lr-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.lr-name { font-size: .27rem; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-rg); }
+.lr-cnt  { font-size: .26rem; color: var(--green); font-variant-numeric: tabular-nums; }
+
+/* ════════════════════════════════════════════
+   BOTTOM BAR
+═══════════════════════════════════════════ */
+#bottom-bar {
+  background: linear-gradient(180deg, #080618, #04020c);
+  border-top: 3px solid #2e2850;
+  display: grid; grid-template-columns: 1fr 210px;
+  overflow: hidden; position: relative;
+}
+/* Battlement top edge */
+#bottom-bar::before {
+  content: ''; position: absolute; top: -7px; left: 0; right: 0; height: 7px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #2e2850 0px, #2e2850 10px, transparent 10px, transparent 18px);
+}
+
+#player-list { display: flex; align-items: center; gap: 5px; padding: 6px 10px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+#player-list::-webkit-scrollbar { display: none; }
+
+.pl-label { font-size: .32rem; color: var(--muted); letter-spacing: .1em; white-space: nowrap; flex-shrink: 0; padding-right: 6px; border-right: 1px solid var(--border3); margin-right: 2px; font-family: var(--font-rg); }
+
+.pl-chip { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 8px; border: 1px solid var(--border3); border-radius: 2px; background: rgba(255,255,255,.018); flex-shrink: 0; min-width: 50px; transition: border-color .2s; position: relative; }
+.pl-chip::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(201,168,76,.14), transparent); }
+.pl-chip-icon   { width: 15px; height: 15px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; }
+.pl-chip-dot    { width: 6px; height: 6px; border-radius: 50%; }
+.pl-chip-name   { font-size: .28rem; font-family: var(--font-rg); }
+.pl-chip-status { font-size: .24rem; font-family: var(--font-rg); }
+
+#event-log { border-left: 1px solid var(--border3); padding: 5px 8px; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+.el-title { font-size: .32rem; color: var(--muted); letter-spacing: .1em; padding-bottom: 3px; border-bottom: 1px solid var(--border); flex-shrink: 0; font-family: var(--font-rg); }
+.el-entry { font-size: .27rem; line-height: 1.8; display: flex; gap: 4px; font-family: var(--font-rg); }
+.el-time  { color: var(--border3); flex-shrink: 0; }
+.el-msg   { color: var(--muted); }
+.el-entry.evt-important .el-msg { color: var(--gold); }
+.el-entry.evt-danger    .el-msg { color: var(--red3); }
+.el-entry.evt-success   .el-msg { color: var(--green); }
+
+/* ════════════════════════════════════════════
+   CONNECTION OVERLAY
+═══════════════════════════════════════════ */
+#conn-overlay {
+  position: absolute; inset: 0; background: rgba(5,3,13,.9);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; gap: 14px; backdrop-filter: blur(2px);
+}
+.conn-spinner { font-size: 1.8rem; animation: spin 2s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.conn-text { font-family: var(--font-cin); font-size: .55rem; color: var(--gold); letter-spacing: .15em; text-shadow: 0 0 14px rgba(201,168,76,.5); }
+.conn-sub  { font-size: .35rem; color: var(--muted); font-family: var(--font-rg); letter-spacing: .1em; }
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <!-- ═══════ HEADER / BATTLEMENTS ═══════ -->
+  <div id="header">
+    <button id="hdr-back" onclick="window.location='/host'">← Host</button>
+    <span class="hdr-torch">🔥</span>
+    <div style="text-align:center">
+      <div class="hdr-title">⚔ &nbsp;Castle Map &nbsp;⚔</div>
+      <div class="hdr-sub">Watch your knights move through the keep</div>
+    </div>
+    <span class="hdr-torch r">🔥</span>
+  </div>
+
+  <!-- ═══════ CONTENT ═══════ -->
+  <div id="content">
+
+    <!-- ── LEFT: GAME STATUS ── -->
+    <div id="status-panel">
+      <div class="panel-head">
+        <div class="panel-title">⚜ Game Status ⚜</div>
+      </div>
+      <div class="panel-scroll">
+
+        <div class="wall-torch" style="margin-bottom:8px">
+          <span class="wt-fire">🔥</span>
+          <span class="wt-text" id="s-detail">Awaiting connection…</span>
+        </div>
+
+        <div class="parchment">
+          <div class="stat-row">
+            <span class="stat-label">ROUND</span>
+            <span class="stat-val big" id="s-round">—</span>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-row">
+            <span class="stat-label">PHASE</span>
+            <span class="stat-val" id="s-phase" style="font-size:.42rem">LOBBY</span>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-row">
+            <span class="stat-label">CHAMBER</span>
+            <span class="stat-val" id="s-room" style="font-size:.34rem;text-align:right;max-width:88px">—</span>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-row">
+            <span class="stat-label">TIME LEFT</span>
+            <span class="stat-val timer" id="s-timer">—:——</span>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-row">
+            <span class="stat-label">KNIGHTS</span>
+            <span class="stat-val big" id="s-players">0/10</span>
+          </div>
+        </div>
+
+        <div class="herald-div"><span class="herald-gem">⚜</span></div>
+        <div class="phase-badge" id="s-badge">Awaiting game state…</div>
+        <div class="herald-div" style="margin-top:10px"><span class="herald-gem">⚔</span></div>
+
+        <div class="wall-torch">
+          <span class="wt-fire" style="animation-delay:.8s">🔥</span>
+          <span class="wt-text">The keep watches all who enter</span>
+        </div>
+
+        <div style="text-align:center;margin-top:14px">
+          <div style="font-size:2rem;opacity:.13;filter:drop-shadow(0 0 6px rgba(201,168,76,.3))">🛡</div>
+          <div style="font-size:.26rem;color:rgba(201,168,76,.2);letter-spacing:.18em;margin-top:3px;font-family:var(--font-rg)">FIDELITAS ET HONOR</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── CENTER: CASTLE MAP ── -->
+    <div id="castle-map">
+      <div class="map-outer-wall"></div>
+      <div class="map-vignette"></div>
+      <div class="map-castle-border"></div>
+      <div class="map-embers" id="embers"></div>
+
+      <div id="conn-overlay">
+        <div class="conn-spinner">⚙</div>
+        <div class="conn-text">Opening the Castle Gates…</div>
+        <div class="conn-sub">connecting to the keep</div>
+      </div>
+
+      <div id="room-grid"></div>
+    </div>
+
+    <!-- ── RIGHT: LEGEND ── -->
+    <div id="legend-panel">
+      <div class="panel-head">
+        <div class="panel-title">⚜ Legend ⚜</div>
+      </div>
+      <div class="legend-scroll">
+
+        <div style="text-align:center;padding:8px 0 4px;font-size:1.4rem;opacity:.18;color:var(--gold)">🏰</div>
+
+        <div class="sect-title">Knight Status</div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(0,200,80,.18);border-color:#00c860;box-shadow:0 0 5px rgba(0,200,80,.5)"></div>
+          <span class="ls-label">In Trial</span>
+        </div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(60,140,240,.14);border-color:#3c8cf0;box-shadow:0 0 5px rgba(60,140,240,.5)"></div>
+          <span class="ls-label">Moving</span>
+        </div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(240,160,30,.1);border-color:#f0a01e"></div>
+          <span class="ls-label">At Rest</span>
+        </div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(201,168,76,.16);border-color:var(--gold);box-shadow:0 0 6px rgba(201,168,76,.55)"></div>
+          <span class="ls-label">⚔ Sovereign</span>
+        </div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(180,0,0,.14);border-color:#cc2010;box-shadow:0 0 5px rgba(200,0,0,.45)"></div>
+          <span class="ls-label">☠ Cursed</span>
+        </div>
+        <div class="ls-item">
+          <div class="ls-dot" style="background:rgba(40,40,40,.12);border-color:#2a2a2a;opacity:.45"></div>
+          <span class="ls-label">✝ Ejected</span>
+        </div>
+
+        <div class="sect-title" style="margin-top:10px">Chambers</div>
+        <div id="legend-rooms"></div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ═══════ BOTTOM BAR ═══════ -->
+  <div id="bottom-bar">
+    <div id="player-list">
+      <div class="pl-label">⚔ KNIGHTS</div>
+    </div>
+    <div id="event-log">
+      <div class="el-title">📜 Chronicle</div>
+      <div id="log-entries"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ROOM DEFINITIONS
+// ═══════════════════════════════════════════════════════════
+const ROOMS = {
+  writing:         { name:'Writing Chamber',  emoji:'📜', theme:'writing',       col:1,row:1, color:'#c9a84c', banner:'#7a5808', gem:'📜' },
+  drawing:         { name:'Drawing Quarters', emoji:'🎨', theme:'drawing',       col:2,row:1, color:'#a064dc', banner:'#502080', gem:'🎨' },
+  deliberation:    { name:'Council Chamber',  emoji:'⚖️', theme:'deliberation',  col:3,row:1, color:'#c02830', banner:'#7a0010', gem:'⚖️' },
+  blackbox:        { name:'Royal Archive',    emoji:'📚', theme:'blackbox',      col:1,row:2, color:'#9040d8', banner:'#481878', gem:'📚' },
+  opinion:         { name:'Opinion Hall',     emoji:'📢', theme:'opinion',       col:2,row:2, color:'#e8a030', banner:'#805008', gem:'📢' },
+  bioscanner:      { name:'Oath Mirror',      emoji:'🪞', theme:'bioscanner',    col:4,row:2, color:'#00deb0', banner:'#007858', gem:'🪞' },
+  quarantine:      { name:'Apothecary Ward',  emoji:'⚗️', theme:'quarantine',    col:5,row:2, color:'#50c850', banner:'#185818', gem:'⚗️' },
+  crisis:          { name:'Crisis Council',   emoji:'🗺️', theme:'crisis',        col:1,row:3, color:'#e86010', banner:'#782808', gem:'🗺️' },
+  checksum:        { name:'Cipher Relay',     emoji:'🔐', theme:'checksum',      col:2,row:3, color:'#3c8cf0', banner:'#183080', gem:'🔐' },
+  'dungeon-trial': { name:'The Dungeon',      emoji:'💀', theme:'dungeon-trial', col:4,row:3, color:'#cc2010', banner:'#580808', gem:'💀' },
+  'royal-whisper': { name:'Royal Whisper',    emoji:'🕯️', theme:'royal-whisper', col:1,row:4, color:'#f0d070', banner:'#806020', gem:'🕯️' },
+  'herald-chain':  { name:"Herald's Chain",   emoji:'🔗', theme:'herald-chain',  col:2,row:4, color:'#4080f0', banner:'#183070', gem:'🔗' },
+  'throne-vote':   { name:'Throne Room',      emoji:'👑', theme:'throne-vote',   col:4,row:4, color:'#b060e0', banner:'#582080', gem:'👑' },
+};
+
+// Wall cell decorations
+const WALL_DECOS = {
+  '4-1':'🛡','5-1':'⚔','3-3':'🏹','5-3':'🗡','3-4':'⚜','5-4':'🔒',
+};
+
+const HOME_ROOMS = ['writing','drawing','deliberation','opinion','bioscanner','crisis','checksum','quarantine','blackbox','royal-whisper'];
+
+let G = {}, prevPhase = null, prevRoom = null, playerPos = {};
+let currentCenteredRoomId = null, mapPan = { x: 0, y: 0 };
+const evLog = [];
+
+const esc = v => String(v??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+// ── Embers ──────────────────────────────────────────────
+(function spawnEmbers() {
+  const container = document.getElementById('embers');
+  for (let i = 0; i < 22; i++) {
+    const e = document.createElement('div');
+    e.className = 'ember';
+    const sz = 1.5 + Math.random() * 3;
+    Object.assign(e.style, {
+      left: Math.random()*100+'%',
+      bottom: '-12px',
+      width: sz+'px', height: sz+'px',
+      '--dx': (Math.random()-.5)*90+'px',
+      animationDuration: (5+Math.random()*10)+'s',
+      animationDelay: (Math.random()*12)+'s',
+    });
+    container.appendChild(e);
+  }
+})();
+
+// ── SSE ─────────────────────────────────────────────────
+function connect() {
+  const es = new EventSource('/events?type=host');
+  es.addEventListener('state', e => {
+    onState(JSON.parse(e.data));
+    document.getElementById('conn-overlay').style.display = 'none';
+  });
+  es.addEventListener('tick', e => {
+    const d = JSON.parse(e.data);
+    if (d.ship !== undefined) document.getElementById('s-timer').textContent = fmtTime(d.ship);
+  });
+  es.addEventListener('shutdown', () => es.close());
+  es.onerror = () => setTimeout(connect, 2500);
+}
+
+// ── State ────────────────────────────────────────────────
+function onState(d) {
+  G = d;
+  if (d.phase !== prevPhase) { logPhaseEvent(d.phase); prevPhase = d.phase; }
+  if (d.selectedRoom && d.selectedRoom !== prevRoom) {
+    logEvent('Chamber: '+(ROOMS[d.selectedRoom]?.name||d.selectedRoom), 'important');
+    prevRoom = d.selectedRoom;
+  }
+  recalcPositions();
+  renderStatus();
+  renderGrid();
+  renderPlayerList();
+  renderLegendRooms();
+  requestAnimationFrame(updateMapCamera);
+}
+
+// ── Positions ────────────────────────────────────────────
+function recalcPositions() {
+  const testees = G.selectedTestees||[];
+  const inTrial = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(G.phase);
+  (G.players||[]).forEach((p,i) => {
+    if (!p.alive) { playerPos[p.name]='ejected'; return; }
+    if (inTrial && testees.includes(p.name) && G.selectedRoom) { playerPos[p.name]=G.selectedRoom; return; }
+    if (G.phase==='extraction') { playerPos[p.name]='center'; return; }
+    if (p.name===G.captainName && ['captain-hub','room-waiting','room-active','reveal'].includes(G.phase)) { playerPos[p.name]='center'; return; }
+    playerPos[p.name] = HOME_ROOMS[i % HOME_ROOMS.length];
+  });
+}
+function playersAt(loc) { return (G.players||[]).filter(p=>playerPos[p.name]===loc); }
+function getOccupiedActiveRoom() {
+  const inTrial = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(G.phase);
+  if (!inTrial || !G.selectedRoom || !ROOMS[G.selectedRoom]) return null;
+  return playersAt(G.selectedRoom).length ? G.selectedRoom : null;
+}
+function playerStatus(p) {
+  if (!p.alive) return 'dead';
+  if (p.cursed) return 'cursed';
+  const inTrial = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(G.phase);
+  if (p.name===G.captainName && playerPos[p.name]==='center') return 'captain';
+  if (inTrial && (G.selectedTestees||[]).includes(p.name)) return 'in-room';
+  return 'waiting';
+}
+
+// ── Status Panel ─────────────────────────────────────────
+function renderStatus() {
+  const players = G.players||[];
+  const alive = players.filter(p=>p.alive).length;
+  document.getElementById('s-round').textContent    = G.round||'—';
+  document.getElementById('s-players').textContent  = alive+'/'+players.length;
+  document.getElementById('s-room').textContent     = ROOMS[G.selectedRoom]?.name||G.selectedRoomName||'—';
+  const pm = {lobby:'LOBBY','role-reveal':'REVEAL','captain-hub':'SOVEREIGN','room-waiting':'PREPARING','room-active':'TRIAL!','dungeon-goblet':'GOBLET','dungeon-reveal':'RESULT',reveal:'JUDGEMENT',extraction:'⚠ ALARM!',gameover:'GAME OVER'};
+  document.getElementById('s-phase').textContent = pm[G.phase]||(G.phase||'—').toUpperCase();
+  const dm = {
+    lobby:          players.length+' knight'+(players.length!==1?'s':'')+' await in the keep',
+    'captain-hub':  esc(G.captainName||'?')+' holds the sovereign seal',
+    'room-waiting': 'Preparing '+(ROOMS[G.selectedRoom]?.name||'the chamber'),
+    'room-active':  '⚔ Trial underway — '+(G.selectedTestees||[]).length+' tested',
+    'dungeon-goblet':'☠ A goblet is chosen…',
+    'dungeon-reveal':'The goblet revealed its secret',
+    reveal:         'The court weighs testimony',
+    extraction:     '🔔 The alarm bell rings!',
+    gameover:       G.gameOverReason==='humansWin'?'🏆 The castle endures!':'🌑 The traitors prevail…',
+  };
+  document.getElementById('s-detail').textContent = dm[G.phase]||'Watching the keep…';
+  document.getElementById('s-badge').textContent  = dm[G.phase]||'Awaiting game state…';
+}
+
+// ── Grid ─────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('room-grid');
+  grid.innerHTML = '';
+  const alarm = G.phase==='extraction', active = G.selectedRoom;
+  // "Camera focus": once players are physically inside the chamber (not just
+  // selected by the captain), zoom the map's attention onto that room.
+  const focused = getOccupiedActiveRoom();
+  grid.classList.toggle('has-focus', !!focused);
+  for (let row=1;row<=4;row++) {
+    for (let col=1;col<=5;col++) {
+      if (col===3&&row===2) { grid.appendChild(makeButtonCell(alarm)); continue; }
+      const id = Object.keys(ROOMS).find(k=>ROOMS[k].col===col&&ROOMS[k].row===row);
+      grid.appendChild(id ? makeRoomCell(id, id===active, id===focused) : makeWallCell(col, row));
+    }
+  }
+}
+
+function updateMapCamera(force = false) {
+  const activeRoomId = getOccupiedActiveRoom();
+  if (!activeRoomId) return;
+  if (!force && activeRoomId === currentCenteredRoomId) return;
+  centerMapOnRoom(activeRoomId);
+  currentCenteredRoomId = activeRoomId;
+}
+
+function centerMapOnRoom(roomId) {
+  const viewport = document.getElementById('castle-map');
+  const grid = document.getElementById('room-grid');
+  const roomEl = grid ? [...grid.querySelectorAll('[data-room]')].find(el => el.dataset.room === roomId) : null;
+  if (!viewport || !grid || !roomEl) return;
+
+  const viewportRect = viewport.getBoundingClientRect();
+  const roomRect = roomEl.getBoundingClientRect();
+  const viewportCenterX = viewportRect.left + viewportRect.width / 2;
+  const viewportCenterY = viewportRect.top + viewportRect.height / 2;
+  const roomCenterX = roomRect.left + roomRect.width / 2;
+  const roomCenterY = roomRect.top + roomRect.height / 2;
+
+  mapPan.x += viewportCenterX - roomCenterX;
+  mapPan.y += viewportCenterY - roomCenterY;
+  grid.style.setProperty('--map-pan-x', `${Math.round(mapPan.x)}px`);
+  grid.style.setProperty('--map-pan-y', `${Math.round(mapPan.y)}px`);
+}
+
+function makeWallCell(col, row) {
+  const div = document.createElement('div');
+  div.className = 'room-cell wall';
+  const deco = WALL_DECOS[col+'-'+row];
+  if (deco) div.innerHTML = `<div style="font-size:1.1rem;opacity:.055;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none">${deco}</div>`;
+  return div;
+}
+
+function makeRoomCell(id, isActive, isFocused) {
+  const r = ROOMS[id];
+  const tokens = playersAt(id).map(makeTokenHTML).join('');
+  const div = document.createElement('div');
+  div.className = 'room-cell room'+(isActive?' is-active':'')+(isFocused?' is-focused':'');
+  div.setAttribute('data-room', id);
+  div.setAttribute('data-theme', r.theme);
+  div.style.backgroundImage = `url('/assets/${id}-room.png')`;
+  div.innerHTML =
+    `<div class="room-img-overlay"></div>`+
+    `<div class="room-arch" style="border-color:${r.color}44;z-index:12"><span class="arch-gem">${r.gem}</span></div>`+
+    `<div class="room-name" style="color:${r.color}">${esc(r.name)}</div>`+
+    `<div class="rc-torch l" style="filter:drop-shadow(0 0 7px ${r.color})">🔥</div>`+
+    `<div class="rc-torch r" style="filter:drop-shadow(0 0 7px ${r.color})">🔥</div>`+
+    `<div class="room-tokens">${tokens}</div>`+
+    (isActive?'<div class="room-trial-banner">⚔ TRIAL ACTIVE ⚔</div>':'');
+  return div;
+}
+
+function makeButtonCell(alarm) {
+  const tokens = playersAt('center').map(makeTokenHTML).join('');
+  const div = document.createElement('div');
+  div.className = 'room-cell btn-room room'+(alarm?' alarm':'');
+  div.style.backgroundImage = `url('/assets/buttomroom.png')`;
+  div.innerHTML =
+    `<div class="room-img-overlay" style="background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.65) 100%)"></div>`+
+    `<div class="room-name" style="z-index:3;position:relative">PUSH THE BUTTON</div>`+
+    `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:2px 6px 14px;position:relative;z-index:3">`+
+      `<div class="big-btn">🔴</div>`+
+      `<div class="btn-label">${alarm?'🔔 THE ALARM RINGS':'CASTLE HUB'}</div>`+
+      `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:3px">${tokens}</div>`+
+    `</div>`;
+  return div;
+}
+
+function makeTokenHTML(p) {
+  const st = playerStatus(p), col = p.color||'#888';
+  return `<div class="p-token ps-${st}" title="${esc(p.name)}"><div class="p-avatar"><div class="p-dot" style="background:${col}"></div></div><div class="p-name" style="color:${col}">${esc(p.name.length>6?p.name.slice(0,5)+'…':p.name)}</div></div>`;
+}
+
+// ── Player Chips ─────────────────────────────────────────
+function renderPlayerList() {
+  const sb={in:'#00c860',captain:'#c9a84c',waiting:'#f0a01e',moving:'#3c8cf0',cursed:'#cc2010',dead:'#333'};
+  const sl={in:'In Trial',captain:'Sovereign',waiting:'Resting',moving:'Moving',cursed:'Cursed',dead:'Ejected'};
+  const chips = (G.players||[]).map(p=>{
+    const st=playerStatus(p), stk=st==='in-room'?'in':st, bc=sb[stk]||'#444', col=p.color||'#888';
+    return `<div class="pl-chip"><div class="pl-chip-icon" style="border-color:${bc};background:${bc}1a;box-shadow:0 0 5px ${bc}44"><div class="pl-chip-dot" style="background:${col}"></div></div><div class="pl-chip-name" style="color:${col}">${esc(p.name)}</div><div class="pl-chip-status" style="color:${bc}">${sl[stk]||''}</div></div>`;
+  }).join('');
+  document.getElementById('player-list').innerHTML = '<div class="pl-label">⚔ KNIGHTS</div>'+chips;
+}
+
+// ── Legend Rooms ─────────────────────────────────────────
+function renderLegendRooms() {
+  document.getElementById('legend-rooms').innerHTML = Object.entries(ROOMS).map(([id,r])=>{
+    const cnt = playersAt(id).length;
+    return `<div class="lr-row"><div class="lr-dot" style="background:${r.color};box-shadow:0 0 4px ${r.color}55"></div><span class="lr-name">${r.emoji} ${r.name}</span>${cnt>0?`<span class="lr-cnt">${cnt}▲</span>`:''}</div>`;
+  }).join('');
+}
+
+// ── Event Log ────────────────────────────────────────────
+function logEvent(msg, type='normal') {
+  const n=new Date(), t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+  evLog.unshift({t,msg,type});
+  if(evLog.length>40) evLog.pop();
+  document.getElementById('log-entries').innerHTML = evLog.slice(0,14).map(e=>
+    `<div class="el-entry${e.type!=='normal'?' evt-'+e.type:''}"><span class="el-time">${e.t}</span><span class="el-msg">${esc(e.msg)}</span></div>`
+  ).join('');
+}
+function logPhaseEvent(ph) {
+  const dm={lobby:'Returned to the great hall','role-reveal':'Roles revealed to all…','captain-hub':`Round ${G.round}: ${G.captainName||'?'} is sovereign`,'room-waiting':`Chamber: ${ROOMS[G.selectedRoom]?.name||G.selectedRoom||'?'}`,'room-active':`⚔ Trial! (${(G.selectedTestees||[]).join(', ')})`,'dungeon-goblet':'☠ A goblet chosen…','dungeon-reveal':'The dungeon revealed its secret',reveal:'Court examines testimony',extraction:'🔔 The Alarm Bell Rings!',gameover:G.gameOverReason==='humansWin'?'🏆 Castle stands!':'🌑 Traitors prevail!'};
+  const dt={extraction:'danger',gameover:'important','room-active':'success','room-waiting':'important'};
+  if(dm[ph]) logEvent(dm[ph], dt[ph]||'normal');
+}
+
+// ── Boot ─────────────────────────────────────────────────
+window.addEventListener('resize', () => requestAnimationFrame(() => updateMapCamera(true)));
+renderGrid();
+renderPlayerList();
+renderLegendRooms();
+connect();
+</script>
+</body>
+</html>
