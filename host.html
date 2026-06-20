@@ -67,7 +67,9 @@ body::after {
   padding: 7px 16px; background: var(--panel);
   border: 2px solid var(--border2); border-radius: 4px;
 }
-#main { flex: 1; display: grid; grid-template-columns: 230px minmax(420px,1fr) minmax(320px,420px); gap: 5px; min-height: 0; }
+#main { flex: 1; display: grid; grid-template-columns: 340px minmax(400px,1fr) minmax(280px,360px); gap: 5px; min-height: 0; transition: grid-template-columns .3s ease; }
+#wrap.host-focus-mode #main { grid-template-columns: 340px minmax(280px,1fr) minmax(520px,680px); }
+#wrap.hide-left-panel #main { grid-template-columns: minmax(520px,1fr) minmax(520px,680px); }
 #center { position: relative; min-height: 0; }
 #center-panel {
   position: absolute; inset: 0;
@@ -88,13 +90,14 @@ body::after {
 }
 #phase-content { width: 100%; height: 100%; padding: 14px 16px; position: relative; z-index: 1; overflow-y: auto; }
 #sidebar { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; }
+#wrap.hide-left-panel #sidebar { display: none; }
 #control-panel { position: relative; min-width: 0; min-height: 0; }
 #control-panel .stone { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
 #control-panel .room-scene { height: 150px; max-width: 100%; }
 #control-panel .phase-title { font-size: clamp(.62rem,1.4vw,.95rem); }
 #control-panel .scroll-area { max-height: 240px; overflow-y: auto; }
 #playerbar {
-  flex-shrink: 0; display: flex; gap: 6px; flex-wrap: wrap; padding: 7px 12px;
+  flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px;
   background: var(--panel); border: 2px solid var(--border2); border-radius: 4px;
   align-items: center;
 }
@@ -122,8 +125,13 @@ body::after {
   display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr);
   gap: 10px; z-index: 2;
   transform: translate(var(--host-map-pan-x,0px), var(--host-map-pan-y,0px));
-  transition: transform .55s cubic-bezier(.22,.68,.18,1);
+  transform-origin: center center;
+  transition: transform .55s cubic-bezier(.22,.68,.18,1), opacity .35s ease;
   will-change: transform;
+}
+#host-map.map-zoomed #host-room-grid {
+  gap: 8px;
+  transform: translate(var(--host-map-pan-x,0px), var(--host-map-pan-y,0px)) scale(1.16);
 }
 .host-map-cell { position: relative; border-radius: 3px; overflow: visible; min-width: 0; min-height: 0; }
 .host-map-wall {
@@ -149,14 +157,14 @@ body::after {
   animation: hostRoomBreath 4s ease-in-out infinite;
 }
 @keyframes hostRoomBreath { 0%,100%{opacity:.5} 50%{opacity:1} }
-#host-room-grid.has-focus .host-map-room:not(.is-focused) { opacity: .42; filter: grayscale(.45) brightness(.7); transform: scale(.98); }
+#host-room-grid.has-focus .host-map-room:not(.is-focused) { opacity: .35; filter: grayscale(.5) brightness(.68); transform: scale(.92); }
 .host-map-room.is-active {
   border-color: var(--gold);
   box-shadow: 0 0 24px rgba(232,196,101,.45), inset 0 0 18px rgba(232,196,101,.1);
 }
 .host-map-room.is-focused {
-  z-index: 20; transform: scale(1.12); border-color: var(--gold2);
-  box-shadow: 0 0 46px rgba(255,229,153,.62), inset 0 0 22px rgba(255,229,153,.12);
+  z-index: 20; transform: scale(1.22); border-color: var(--gold2);
+  box-shadow: 0 0 54px rgba(255,229,153,.7), inset 0 0 26px rgba(255,229,153,.16);
 }
 .host-map-name {
   position: relative; z-index: 3; flex-shrink: 0;
@@ -236,7 +244,13 @@ h2 { font-size: clamp(.55rem,1.4vw,.8rem); color: var(--gold2); }
 @keyframes flicker { 0%,100%{opacity:1;transform:scaleY(1)} 30%{opacity:.8;transform:scaleY(.95)} 70%{opacity:.9;transform:scaleY(1.03)} 85%{opacity:.75;transform:scaleY(.98)} }
 
 /* ── Lobby ── */
+.host-lobby-panel { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:8px; padding-top:8px; }
+.host-lobby-panel .phase-title { font-size: clamp(.72rem,1.7vw,1rem); }
+.host-lobby-panel .phase-sub { margin-top: 0; }
 .lobby-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 14px 0; }
+#control-panel .lobby-grid { margin: 8px 0; gap: 6px; }
+#control-panel .lobby-banner { width: 84px; padding: 7px 8px; gap: 4px; }
+#control-panel .shield { width: 20px; height: 22px; }
 .lobby-banner {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   background: var(--panel2); border: 2px solid var(--border2); border-radius: 4px;
@@ -258,6 +272,27 @@ h2 { font-size: clamp(.55rem,1.4vw,.8rem); color: var(--gold2); }
 /* ── Captain hub ── */
 .cap-name { font-size: clamp(.85rem,2.5vw,1.4rem); color: var(--gold); text-shadow: 0 0 20px rgba(201,168,76,.5), 2px 2px 0 #1a0800; }
 .room-label { font-size: clamp(.65rem,1.8vw,.95rem); color: var(--gold2); margin: 4px 0 10px; }
+.room-briefing {
+  text-align: left; background: rgba(10,7,4,.42); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 10px 12px; margin: 8px 0;
+  box-shadow: inset 0 0 16px rgba(0,0,0,.35);
+}
+.brief-title { font-size: .6rem; color: var(--gold2); line-height: 1.55; margin-bottom: 5px; }
+.brief-objective { font-size: .46rem; color: var(--muted); line-height: 1.75; margin-bottom: 8px; }
+.brief-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.brief-stat { background: var(--panel2); border: 1px solid rgba(138,98,48,.62); border-radius: 3px; padding: 7px 8px; }
+.brief-stat-label { font-size: .36rem; color: var(--muted); letter-spacing: .1em; margin-bottom: 4px; }
+.brief-stat-value { font-size: .48rem; color: var(--text); line-height: 1.55; }
+.launch-status { border: 1px solid var(--border2); border-radius: 3px; padding: 8px 10px; margin: 8px 0; font-size: .5rem; line-height: 1.7; }
+.launch-status.ready { border-color: var(--green2); color: var(--green2); background: rgba(74,158,107,.12); }
+.launch-status.waiting { border-color: var(--ember); color: var(--ember); background: rgba(232,131,42,.1); }
+.ready-list { display: grid; gap: 7px; margin: 10px 0; }
+.ready-row { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; background: rgba(10,7,4,.42); border: 1px solid var(--border2); border-radius: 3px; }
+.ready-name { font-size: .5rem; line-height: 1.6; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ready-state { font-size: .42rem; letter-spacing: .08em; color: var(--muted); }
+.ready-row.is-ready { border-color: var(--green2); background: rgba(74,158,107,.1); }
+.ready-row.is-ready .ready-state { color: var(--green2); }
+.ready-row.is-offline .ready-state { color: var(--red2); }
 .knight-chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
 .knight-chip {
   padding: 6px 12px; border-radius: 3px; font-size: .55rem;
@@ -597,6 +632,20 @@ h2 { font-size: clamp(.55rem,1.4vw,.8rem); color: var(--gold2); }
 .role-chip  { padding: 6px 12px; border-radius: 3px; border: 1px solid; font-size: .5rem; text-align: center; }
 .role-k { border-color: var(--border2); background: var(--panel2); }
 .role-i { border-color: var(--purple2); background: rgba(91,45,138,.15); }
+.result-gif{position:relative;width:min(560px,74vw);height:260px;margin:0 auto 14px;border:3px solid var(--border2);border-radius:4px;overflow:hidden;background:#090713;box-shadow:inset 0 0 40px rgba(0,0,0,.72);image-rendering:pixelated}
+.result-gif.human-win{border-color:var(--green2);animation:victoryPulse 1.6s infinite}
+.result-gif.alien-win{border-color:var(--purple2);animation:traitorPulse 1.7s infinite}
+.result-castle{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);width:230px;height:120px;background:linear-gradient(180deg,#5a4524,#2b1d10);border:5px solid var(--gold)}
+.result-castle:before,.result-castle:after{content:'';position:absolute;bottom:0;width:48px;height:158px;background:#3b2b18;border:5px solid var(--gold)}
+.result-castle:before{left:-58px}.result-castle:after{right:-58px}
+.result-gate{position:absolute;left:50%;bottom:42px;width:72px;height:74px;transform:translateX(-50%);background:#120a05;border:3px solid #000;animation:gateClose 1.2s infinite steps(4)}
+.result-moon{position:absolute;right:70px;top:34px;width:78px;height:78px;border-radius:50%;background:var(--purple2);box-shadow:0 0 34px rgba(199,155,240,.8)}
+.result-shadow{position:absolute;inset:0;background:linear-gradient(110deg,transparent 0%,rgba(155,89,182,.42) 45%,transparent 70%);animation:shadowSweep 1.4s infinite}
+.result-gif-label{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:.82rem;letter-spacing:.14em;color:var(--gold2);text-shadow:3px 3px 0 #000}
+@keyframes victoryPulse{0%,100%{box-shadow:0 0 18px rgba(80,220,120,.38),inset 0 0 40px rgba(0,0,0,.72)}50%{box-shadow:0 0 48px rgba(80,220,120,.86),inset 0 0 26px rgba(80,220,120,.18)}}
+@keyframes traitorPulse{0%,100%{box-shadow:0 0 18px rgba(155,89,182,.38),inset 0 0 40px rgba(0,0,0,.74)}50%{box-shadow:0 0 52px rgba(199,155,240,.86),inset 0 0 28px rgba(155,89,182,.2)}}
+@keyframes gateClose{0%{clip-path:inset(0 42% 0 42%)}60%,100%{clip-path:inset(0 0 0 0)}}
+@keyframes shadowSweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 
 /* ── Buttons ── */
 .btn { cursor: pointer; border: none; border-radius: 4px; font-family: var(--px); font-size: .55rem; padding: 9px 16px; transition: all .1s; letter-spacing: 1px; }
@@ -608,29 +657,55 @@ h2 { font-size: clamp(.55rem,1.4vw,.8rem); color: var(--gold2); }
 .btn-ghost{ background: transparent; border: 2px solid var(--border2); color: var(--muted); }
 .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
 .btn-row  { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+.admin-override {
+  margin-top: 12px; padding: 10px; border: 1px solid rgba(239,98,83,.45); border-radius: 4px;
+  background: rgba(50,12,12,.34); text-align: left;
+}
+.admin-override-title {
+  display: flex; justify-content: space-between; gap: 8px; align-items: center;
+  font-size: .43rem; color: var(--red2); letter-spacing: .12em;
+}
+.admin-phase { color: var(--muted); font-size: .38rem; letter-spacing: .08em; }
+.admin-override p { margin-top: 7px; font-size: .42rem; line-height: 1.65; color: var(--muted); }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.admin-actions .btn { font-size: .42rem; padding: 7px 9px; }
+
+@media (max-width: 1180px) {
+  #main { grid-template-columns: 310px minmax(330px,1fr) minmax(260px,330px); }
+  #wrap.host-focus-mode #main { grid-template-columns: 310px minmax(240px,1fr) minmax(420px,560px); }
+  #wrap.hide-left-panel #main { grid-template-columns: minmax(380px,1fr) minmax(420px,560px); }
+  #phase-content { padding: 12px; }
+  #control-panel .room-scene { height: 135px; }
+}
+@media (max-width: 980px) {
+  #main { grid-template-columns: 280px minmax(285px,1fr) minmax(235px,300px); }
+  #wrap.host-focus-mode #main { grid-template-columns: 280px minmax(220px,1fr) minmax(340px,1.2fr); }
+  #wrap.hide-left-panel #main { grid-template-columns: minmax(280px,1fr) minmax(340px,1.2fr); }
+  .host-map-name { font-size: .3rem; }
+}
 
 /* ── Sidebar ── */
-#probe-wrap { flex: 1; display: flex; flex-direction: column; padding: 8px; min-height: 0; overflow: hidden; }
-#probe-list { flex: 1; overflow-y: auto; margin-top: 4px; display: flex; flex-direction: column; gap: 5px; }
-.probe-card { background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; padding: 7px 8px; font-size: .48rem; }
-.probe-room { color: var(--gold2); margin-bottom: 3px; }
-.probe-row  { display: flex; gap: 4px; line-height: 1.7; color: var(--muted); }
-.probe-name { color: var(--text); min-width: 52px; flex-shrink: 0; }
-#qr-wrap    { padding: 8px; text-align: center; }
-#qr-box     { background: #fff; padding: 5px; border-radius: 2px; border: 2px solid var(--gold); display: inline-block; }
-#join-url   { font-size: .42rem; color: var(--muted); margin-top: 4px; word-break: break-all; }
+#probe-wrap { flex: 1; display: flex; flex-direction: column; padding: 10px; min-height: 0; overflow: hidden; }
+#probe-list { flex: 1; overflow-y: auto; margin-top: 6px; display: flex; flex-direction: column; gap: 7px; }
+.probe-card { background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 10px; font-size: .52rem; }
+.probe-room { color: var(--gold2); margin-bottom: 4px; line-height: 1.5; }
+.probe-row  { display: flex; gap: 6px; line-height: 1.75; color: var(--muted); }
+.probe-name { color: var(--text); min-width: 68px; flex-shrink: 0; }
+#qr-wrap    { padding: 8px 10px; text-align: center; flex-shrink: 0; }
+#qr-box     { background: #fff; padding: 4px; border-radius: 2px; border: 2px solid var(--gold); display: inline-block; margin: 2px 0; }
+#join-url   { font-size: .43rem; color: var(--muted); margin-top: 3px; word-break: break-all; line-height: 1.6; }
 
 /* ── Roster ── */
 .roster-pill {
-  display: flex; align-items: center; gap: 5px; padding: 4px 9px;
-  background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; font-size: .48rem;
+  display: flex; align-items: center; gap: 7px; padding: 7px 11px;
+  background: var(--panel2); border: 1px solid var(--border2); border-radius: 3px; font-size: .52rem;
   transition: border-color .2s;
 }
-.roster-pip  { width: 8px; height: 8px; border-radius: 1px; transform: rotate(45deg); flex-shrink: 0; }
+.roster-pip  { width: 9px; height: 9px; border-radius: 1px; transform: rotate(45deg); flex-shrink: 0; }
 .roster-pill.cap-mark  { border-color: var(--gold); }
 .roster-pill.dead      { opacity: .3; text-decoration: line-through; }
 .roster-pill.testing   { border-color: var(--ember); }
-.roster-label { font-size: .45rem; color: var(--muted); margin-right: 4px; }
+.roster-label { font-size: .52rem; color: var(--gold); margin-right: 5px; letter-spacing: .08em; }
 
 /* ── Scroll ── */
 ::-webkit-scrollbar { width: 4px; }
@@ -774,7 +849,7 @@ fetch('/api/info')
   .then(({ lanUrl }) => {
     document.getElementById('join-url').textContent = lanUrl;
     if (typeof QRCode !== 'undefined') {
-      new QRCode(document.getElementById('qr'), { text: lanUrl, width: 84, height: 84, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(document.getElementById('qr'), { text: lanUrl, width: 168, height: 168, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
     }
   })
   .catch(() => {
@@ -796,20 +871,48 @@ const HOST_MAP_ROOMS = {
   bioscanner:{name:'Oath Mirror',col:4,row:2,color:'#6fcf8e',theme:'bioscanner'},
   quarantine:{name:'Apothecary Ward',col:5,row:2,color:'#6fcf8e',theme:'quarantine'},
   crisis:{name:'Crisis Council',col:1,row:3,color:'#ffa84e',theme:'crisis'},
+  'alibi-ledger':{name:'Alibi Ledger',col:4,row:1,color:'#ffe599',theme:'alibi-ledger',asset:'blackbox-room.png'},
+  'war-map':{name:'The War Map',col:5,row:1,color:'#ffa84e',theme:'war-map',asset:'crisis-room.png'},
   checksum:{name:'Cipher Relay',col:2,row:3,color:'#5fa8ff',theme:'checksum'},
+  'torch-signal':{name:'Torch Signal',col:3,row:3,color:'#5fa8ff',theme:'torch-signal',asset:'checksum-room.png'},
+  'market-rumor':{name:'Market Rumor',col:5,row:3,color:'#ffa84e',theme:'market-rumor',asset:'opinion-room.png'},
   'dungeon-trial':{name:'The Dungeon',col:4,row:3,color:'#ef6253',theme:'dungeon-trial'},
   'royal-whisper':{name:'Royal Whisper',col:1,row:4,color:'#ffe599',theme:'royal-whisper'},
   'herald-chain':{name:"Herald's Chain",col:2,row:4,color:'#5fa8ff',theme:'herald-chain'},
+  'relic-vault':{name:'Relic Vault',col:3,row:4,color:'#c79bf0',theme:'relic-vault',asset:'blackbox-room.png'},
   'throne-vote':{name:'Throne Room',col:4,row:4,color:'#c79bf0',theme:'throne-vote'},
 };
-const HOST_MAP_HOME = ['writing','drawing','deliberation','opinion','bioscanner','crisis','checksum','quarantine','blackbox','royal-whisper'];
-const HOST_MAP_WALLS = {'4-1':'SHIELD','5-1':'SWORDS','3-3':'BOW','5-3':'BLADE','3-4':'SEAL','5-4':'LOCK'};
+const HOST_MAP_HOME = ['writing','drawing','deliberation','opinion','bioscanner','crisis','checksum','quarantine','blackbox','royal-whisper','war-map','torch-signal','relic-vault','market-rumor','alibi-ledger'];
+const HOST_MAP_WALLS = {'5-4':'LOCK'};
 const HOST_ROOM_GLOW = {
   writing:'rgba(232,196,101,.24)',drawing:'rgba(199,155,240,.2)',deliberation:'rgba(239,98,83,.22)',
   opinion:'rgba(255,168,78,.2)',bioscanner:'rgba(111,207,142,.2)',crisis:'rgba(255,168,78,.22)',
   checksum:'rgba(95,168,255,.2)',quarantine:'rgba(111,207,142,.2)',blackbox:'rgba(199,155,240,.22)',
   'royal-whisper':'rgba(255,229,153,.24)','dungeon-trial':'rgba(239,98,83,.28)',
-  'herald-chain':'rgba(95,168,255,.22)','throne-vote':'rgba(199,155,240,.24)'
+  'herald-chain':'rgba(95,168,255,.22)','throne-vote':'rgba(199,155,240,.24)',
+  'war-map':'rgba(255,168,78,.26)','torch-signal':'rgba(95,168,255,.24)',
+  'relic-vault':'rgba(199,155,240,.26)','market-rumor':'rgba(255,168,78,.24)',
+  'alibi-ledger':'rgba(255,229,153,.24)'
+};
+const HOST_ROOM_META = {
+  writing:{objective:'Write short court answers',range:[2,4],timer:30},
+  drawing:{objective:'Draw the hidden prompt',range:[2,4],timer:35},
+  deliberation:{objective:'Choose under pressure',range:[2,4],timer:20},
+  opinion:{objective:'Reveal suspicious values',range:[2,4],timer:15},
+  bioscanner:{objective:'Match sacred seals',range:[2,2],timer:40},
+  crisis:{objective:'Rank the castle crisis',range:[2,4],timer:35},
+  'war-map':{objective:'Choose the mission route',range:[2,4],timer:30},
+  checksum:{objective:'Recall the cipher order',range:[2,2],timer:35},
+  'torch-signal':{objective:'Send the signal',range:[2,4],timer:25},
+  quarantine:{objective:'Sort suspicious items',range:[2,4],timer:35},
+  'relic-vault':{objective:'Sort the relics',range:[2,4],timer:35},
+  'market-rumor':{objective:'Spread one rumor',range:[2,4],timer:30},
+  'alibi-ledger':{objective:'Write believable alibis',range:[2,4],timer:35},
+  blackbox:{objective:'Remember the castle record',range:[2,3],timer:30},
+  'royal-whisper':{objective:'Give clues to secret words',range:[2,4],timer:30},
+  'dungeon-trial':{objective:'Answer or face the goblet',range:[2,4],timer:30},
+  'herald-chain':{objective:'Pass the word chain',range:[2,4],timer:30},
+  'throne-vote':{objective:'Rate the court statement',range:[2,4],timer:25},
 };
 let hostPlayerPos = {}, hostCenteredRoomId = null, hostMapPan = { x: 0, y: 0 };
 function connect() {
@@ -836,6 +939,43 @@ function act(type, data = {}) {
 }
 
 // ── Timer ────────────────────────────────────────────────────────────
+function adminOverride(op, label, confirmText) {
+  if (confirmText && !confirm(confirmText)) return;
+  act('admin-override', { op });
+  showToast(`Admin override: ${label}`, 'var(--red2)');
+}
+
+function renderAdminOverride() {
+  const phase = S.phase || 'unknown';
+  const actions = [];
+  if (phase === 'pre-challenge') {
+    actions.push({op:'start-room', label:'Start now', text:'Start room'});
+  }
+  if (['pre-challenge','room-waiting','room-active','dungeon-goblet'].includes(phase)) {
+    actions.push({op:'force-reveal', label:'Force reveal', text:'Force reveal', confirm:'Force the current room to resolve now? Missing answers will be marked as skipped.'});
+  }
+  if (phase === 'extraction') {
+    actions.push({op:'fail-vote', label:'Cancel vote', text:'Cancel vote', confirm:'Cancel the extraction vote and return to the prior game flow?'});
+  }
+  if (['role-reveal','reveal','dungeon-reveal','room-waiting','room-active','dungeon-goblet','pre-challenge','extraction','gameover'].includes(phase)) {
+    actions.push({op:'next-round', label:'Next round', text:phase === 'gameover' ? 'Same players' : 'Next round', confirm:'Skip ahead to the next playable round?'});
+  }
+  if (!['lobby','role-reveal'].includes(phase)) {
+    actions.push({op:'captain-hub', label:'Captain hub', text:'Return hub', confirm:'Return to the captain hub and clear the current room or vote?'});
+  }
+  if (!actions.length) return '';
+  return `<div class="admin-override">
+    <div class="admin-override-title">
+      <span>ADMIN OVERRIDE</span>
+      <span class="admin-phase">${esc(phase)}</span>
+    </div>
+    <p>Use only if a device, timer, or room state gets stuck.</p>
+    <div class="admin-actions">
+      ${actions.map(a=>`<button class="btn ${a.op==='force-reveal'||a.op==='captain-hub'?'btn-red':'btn-ghost'}" onclick="adminOverride('${a.op}','${esc(a.label)}','${esc(a.confirm || '')}')">${esc(a.text)}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
 function updateTimer() {
   const l = S.shipTimerLeft || 0, m = S.shipTimerMax || 1;
   const pct = l / m * 100;
@@ -851,7 +991,7 @@ function updateRing() {
   const ring = document.getElementById('dyn-ring');
   const txt  = document.getElementById('dyn-ring-txt');
   if (!ring || !txt) return;
-  const MAXES = { writing:30,drawing:35,deliberation:20,opinion:15,bioscanner:40,crisis:35,checksum:35,quarantine:35,blackbox:30 };
+  const MAXES = { writing:30,drawing:35,deliberation:20,opinion:15,bioscanner:40,crisis:35,checksum:35,quarantine:35,blackbox:30,'war-map':30,'torch-signal':25,'relic-vault':35,'market-rumor':30,'alibi-ledger':35 };
   const l = S.roomTimerLeft || 0;
   const max = MAXES[S.selectedRoom] || 30;
   const circ = 2 * Math.PI * 26;
@@ -873,6 +1013,11 @@ function render(phaseChanged = false) {
   updateTimer();
   document.getElementById('round-badge').textContent = S.round ? `ROUND ${S.round}` : 'ROUND —';
   document.getElementById('test-badge').style.display = S.testMode ? '' : 'none';
+  const focusMode = !!S.selectedRoom && ['captain-hub','pre-challenge','room-waiting','room-active'].includes(S.phase);
+  const hideLeftPanel = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(S.phase);
+  const wrap = document.getElementById('wrap');
+  wrap?.classList.toggle('host-focus-mode', focusMode);
+  wrap?.classList.toggle('hide-left-panel', hideLeftPanel);
   renderRoster();
   renderProbe();
   renderHostMap();
@@ -903,6 +1048,7 @@ function render(phaseChanged = false) {
     case 'lobby':      html = renderLobby(); break;
     case 'role-reveal':html = renderRoleReveal(); break;
     case 'captain-hub':html = renderCaptainHub(); break;
+    case 'pre-challenge':html = renderPreChallengeHost(); break;
     case 'room-waiting':
     case 'room-active':
       if (S.selectedRoom==='dungeon-trial') html = renderDungeonTrial();
@@ -917,7 +1063,7 @@ function render(phaseChanged = false) {
     case 'gameover':   html = renderGameover(); break;
     default:           html = '<p class="label center-text">Awaiting connection…</p>';
   }
-  el.innerHTML = `<div class="phase-in">${html}</div>`;
+  el.innerHTML = `<div class="phase-in">${html}${renderAdminOverride()}</div>`;
 
   // ── Phase transition effects (after DOM update) ──
   if (phaseChanged) {
@@ -949,7 +1095,7 @@ function render(phaseChanged = false) {
 
 function recalcHostMapPositions() {
   const testees = S.selectedTestees || [];
-  const inTrial = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(S.phase);
+  const inTrial = ['pre-challenge','room-waiting','room-active','dungeon-goblet','dungeon-reveal'].includes(S.phase);
   (S.players || []).forEach((p, i) => {
     if (!p.alive) { hostPlayerPos[p.name] = 'ejected'; return; }
     if (S.phase === 'extraction') { hostPlayerPos[p.name] = 'center'; return; }
@@ -966,7 +1112,7 @@ function hostMapPlayersAt(loc) {
 }
 
 function getHostMapFocus() {
-  const trialPhases = ['room-waiting','room-active','dungeon-goblet','dungeon-reveal'];
+  const trialPhases = ['pre-challenge','room-waiting','room-active','dungeon-goblet','dungeon-reveal'];
   if (S.phase === 'extraction') return 'center';
   if (trialPhases.includes(S.phase) && S.selectedRoom && hostMapPlayersAt(S.selectedRoom).length) return S.selectedRoom;
   if (S.phase === 'captain-hub' && S.selectedRoom) return S.selectedRoom;
@@ -985,8 +1131,10 @@ function renderHostMap() {
   recalcHostMapPositions();
   const grid = document.getElementById('host-room-grid');
   if (!grid) return;
+  const map = document.getElementById('host-map');
   const focus = getHostMapFocus();
   const active = S.selectedRoom;
+  map?.classList.toggle('map-zoomed', !!focus && focus !== 'center');
   grid.classList.toggle('has-focus', !!focus && focus !== 'center');
   const cells = [];
   for (let row = 1; row <= 4; row++) {
@@ -1007,9 +1155,9 @@ function renderHostMapWall(col, row) {
 function renderHostMapRoom(id, isActive, isFocused) {
   const r = HOST_MAP_ROOMS[id];
   const tokens = hostMapPlayersAt(id).map(renderHostMapToken).join('');
-  return `<div class="host-map-cell host-map-room${isActive?' is-active':''}${isFocused?' is-focused':''}"
+  return `<div class="host-map-cell host-map-room${isActive?' is-active selected':''}${isFocused?' is-focused':''}"
     data-room="${esc(id)}" data-theme="${esc(r.theme)}"
-    style="background-image:url('/assets/${id}-room.png');--rt:${HOST_ROOM_GLOW[id] || 'rgba(232,196,101,.16)'}">
+    style="background-image:url('/assets/${r.asset || id + '-room.png'}');--rt:${HOST_ROOM_GLOW[id] || 'rgba(232,196,101,.16)'}">
     <div class="host-map-name" style="color:${r.color}">${esc(r.name)}</div>
     <div class="host-map-tokens">${tokens}</div>
     ${isActive ? '<div class="host-trial-banner">TRIAL ACTIVE</div>' : ''}
@@ -1038,7 +1186,16 @@ function renderHostMapToken(p) {
 
 function updateHostMapCamera(force = false) {
   const focus = getHostMapFocus();
-  if (!focus) return;
+  if (!focus) {
+    if (hostCenteredRoomId !== null) {
+      hostMapPan = { x: 0, y: 0 };
+      hostCenteredRoomId = null;
+      const grid = document.getElementById('host-room-grid');
+      grid?.style.setProperty('--host-map-pan-x', '0px');
+      grid?.style.setProperty('--host-map-pan-y', '0px');
+    }
+    return;
+  }
   if (!force && focus === hostCenteredRoomId) return;
   centerHostMapOnRoom(focus);
   hostCenteredRoomId = focus;
@@ -1073,7 +1230,7 @@ function renderLobby() {
     </div>`;
   }).join('');
 
-  return `<div class="center-text">
+  return `<div class="center-text host-lobby-panel">
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px">
       <span class="torch" style="font-size:1.6rem">🔥</span>
       <div class="phase-title" style="color:var(--gold)">AWAITING WARRIORS</div>
@@ -1172,6 +1329,19 @@ function renderRoomScene(roomId, objective = '', figuresHtml = '') {
             <div style="font-size:1rem;margin-top:4px;opacity:.6">⚜️ ⚜️</div>`,
       floor:`<span style="font-size:.9rem;opacity:.35">🏛️</span><span style="font-size:1.1rem;opacity:.4">🗣️</span><span style="font-size:.9rem;opacity:.35">🏛️</span>`,
     },
+    'market-rumor':{
+      name:'Market Rumor',obj:'Spread one rumor',
+      glow:'rgba(255,168,78,.2)',torch:'#ffa84e',
+      wallL:`<div style="font-size:.78rem;opacity:.38;color:#ffe599">STALL</div><div style="font-size:.68rem;opacity:.3;color:#ffe599">BREAD</div>`,
+      wallR:`<div style="font-size:.78rem;opacity:.38;color:#ffe599">WELL</div><div style="font-size:.68rem;opacity:.3;color:#ffe599">BELL</div>`,
+      feat:`<div style="display:flex;gap:12px;align-items:center;justify-content:center">
+        <div style="width:38px;height:44px;background:#3a2512;border:2px solid var(--border2)"></div>
+        <div style="font-size:2.2rem;filter:drop-shadow(0 4px 14px rgba(255,168,78,.45))">SCROLL</div>
+        <div style="width:38px;height:44px;background:#3a2512;border:2px solid var(--border2)"></div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(255,229,153,.62);letter-spacing:.16em;margin-top:6px">WHISPERS MOVE FAST</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.4">STALL</span><span style="font-size:1rem;opacity:.48">RUMOR</span><span style="font-size:.9rem;opacity:.4">CROWD</span>`,
+    },
     bioscanner:{
       name:'Oath Mirror',obj:'Match the sacred seals',
       glow:'rgba(0,220,180,.3)',torch:'#00deb0',
@@ -1194,6 +1364,17 @@ function renderRoomScene(roomId, objective = '', figuresHtml = '') {
             <div style="font-size:1.1rem;margin-top:0px;opacity:.72">🔥 🔥</div>`,
       floor:`<span style="font-size:1rem;opacity:.46">🛡️</span><span style="font-size:1.1rem;opacity:.5">⚔️</span><span style="font-size:1rem;opacity:.46">🛡️</span>`,
     },
+    'war-map':{
+      name:'The War Map',obj:'Choose the mission route',
+      glow:'rgba(255,168,78,.28)',torch:'#ffa84e',
+      wallL:`<div style="font-size:.76rem;opacity:.42;color:#e8c465">NORTH</div><div style="font-size:.72rem;opacity:.34;color:#e8c465">FORD</div>`,
+      wallR:`<div style="font-size:.76rem;opacity:.42;color:#e8c465">BRIDGE</div><div style="font-size:.72rem;opacity:.34;color:#e8c465">GATE</div>`,
+      feat:`<div style="width:150px;height:82px;border:2px solid rgba(232,196,101,.65);background:linear-gradient(135deg,#2f2312,#120c06);box-shadow:0 0 20px rgba(255,168,78,.32);padding:8px;text-align:left">
+        <div style="height:2px;background:#8a6230;margin:8px 0"></div><div style="height:2px;background:#8a6230;width:72%;margin:8px 0"></div><div style="height:2px;background:#8a6230;width:55%;margin:8px 0"></div>
+        <div style="font-size:.42rem;color:rgba(255,229,153,.7);letter-spacing:.12em;text-align:center;margin-top:8px">WAR ROUTES</div>
+      </div>`,
+      floor:`<span style="font-size:.9rem;opacity:.44">SHIELD</span><span style="font-size:1rem;opacity:.5">MAP</span><span style="font-size:.9rem;opacity:.44">SWORD</span>`,
+    },
     checksum:{
       name:'Cipher Relay',obj:'Recall the cipher order',
       glow:'rgba(60,140,240,.25)',torch:'#3c8cf0',
@@ -1204,6 +1385,19 @@ function renderRoomScene(roomId, objective = '', figuresHtml = '') {
             <div style="font-size:.55rem;color:rgba(60,140,240,.4);letter-spacing:6px;margin-top:3px">█ ░ █ █ ░</div>`,
       floor:`<span style="font-size:1rem;opacity:.4">🗝️</span><span style="font-size:1.1rem;opacity:.46">🔑</span><span style="font-size:1rem;opacity:.4">🗝️</span>`,
     },
+    'torch-signal':{
+      name:'Torch Signal',obj:'Send the signal',
+      glow:'rgba(95,168,255,.26)',torch:'#5fa8ff',
+      wallL:`<div style="font-size:.82rem;opacity:.42;color:#9cc9ff">BEACON</div><div style="font-size:.72rem;opacity:.32;color:#9cc9ff">WATCH</div>`,
+      wallR:`<div style="font-size:.82rem;opacity:.42;color:#9cc9ff">GATE</div><div style="font-size:.72rem;opacity:.32;color:#9cc9ff">TOWER</div>`,
+      feat:`<div style="display:flex;align-items:flex-end;gap:10px;justify-content:center">
+        <div style="width:34px;height:62px;background:#2a1c10;border:2px solid var(--border2)"></div>
+        <div style="font-size:2.6rem;filter:drop-shadow(0 0 18px rgba(95,168,255,.7))">FIRE</div>
+        <div style="width:34px;height:62px;background:#2a1c10;border:2px solid var(--border2)"></div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(156,201,255,.68);letter-spacing:.18em;margin-top:6px">SIGNAL THE WATCH</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.42">TOWER</span><span style="font-size:1rem;opacity:.48">TORCH</span><span style="font-size:.9rem;opacity:.42">GATE</span>`,
+    },
     quarantine:{
       name:'Apothecary Ward',obj:'Sort the suspicious items',
       glow:'rgba(80,200,80,.24)',torch:'#50c850',
@@ -1213,6 +1407,32 @@ function renderRoomScene(roomId, objective = '', figuresHtml = '') {
             <div style="font-size:.38rem;color:rgba(80,200,80,.65);letter-spacing:.15em;margin-top:4px">SORT THE REMEDIES</div>
             <div style="font-size:1rem;margin-top:4px;opacity:.65">🌿 🍄 🌿</div>`,
       floor:`<span style="font-size:1rem;opacity:.46">🌿</span><span style="font-size:1.1rem;opacity:.5">🧪</span><span style="font-size:1rem;opacity:.46">🌿</span>`,
+    },
+    'relic-vault':{
+      name:'The Relic Vault',obj:'Sort the relics',
+      glow:'rgba(199,155,240,.26)',torch:'#c79bf0',
+      wallL:`<div style="font-size:.76rem;opacity:.4;color:#c79bf0">LOCK</div><div style="font-size:.68rem;opacity:.32;color:#c79bf0">SEAL</div>`,
+      wallR:`<div style="font-size:.76rem;opacity:.4;color:#c79bf0">KEY</div><div style="font-size:.68rem;opacity:.32;color:#c79bf0">CHEST</div>`,
+      feat:`<div style="width:120px;height:72px;border:3px solid rgba(199,155,240,.7);background:linear-gradient(180deg,#251434,#08050d);box-shadow:0 0 22px rgba(199,155,240,.36);display:flex;align-items:center;justify-content:center">
+        <div style="font-size:1.4rem;color:#ffe599;letter-spacing:.16em">RELICS</div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(199,155,240,.68);letter-spacing:.18em;margin-top:7px">VAULT UNDER OATH</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.42">CROWN</span><span style="font-size:1rem;opacity:.5">KEY</span><span style="font-size:.9rem;opacity:.42">COIN</span>`,
+    },
+    'alibi-ledger':{
+      name:'The Alibi Ledger',obj:'Write a believable alibi',
+      glow:'rgba(255,229,153,.24)',torch:'#f0d070',
+      wallL:`<div style="font-size:.78rem;opacity:.42;color:#ffe599">ALIBI</div><div style="font-size:.68rem;opacity:.32;color:#ffe599">WITNESS</div>`,
+      wallR:`<div style="font-size:.78rem;opacity:.42;color:#ffe599">BELL</div><div style="font-size:.68rem;opacity:.32;color:#ffe599">SEAL</div>`,
+      feat:`<div style="display:flex;align-items:flex-end;justify-content:center;gap:12px">
+        <div style="font-size:1.45rem;filter:drop-shadow(0 0 12px rgba(255,229,153,.45))">CANDLE</div>
+        <div style="width:138px;height:78px;border:3px solid rgba(255,229,153,.62);background:linear-gradient(135deg,#382713,#120c06);box-shadow:0 0 22px rgba(255,229,153,.22);display:flex;align-items:center;justify-content:center">
+          <div style="font-size:1.1rem;color:#ffe599;letter-spacing:.14em">LEDGER</div>
+        </div>
+        <div style="font-size:1.3rem;opacity:.72">QUILL</div>
+      </div>
+      <div style="font-size:.38rem;color:rgba(255,229,153,.66);letter-spacing:.18em;margin-top:7px">WHO WAS REALLY THERE?</div>`,
+      floor:`<span style="font-size:.9rem;opacity:.42">QUILL</span><span style="font-size:1rem;opacity:.5">BOOK</span><span style="font-size:.9rem;opacity:.42">CANDLE</span>`,
     },
     blackbox:{
       name:'Royal Archive Recall',obj:'Remember the castle record',
@@ -1305,6 +1525,52 @@ function renderRoomScene(roomId, objective = '', figuresHtml = '') {
   </div>`;
 }
 
+function roomPlayerRequirementText(meta) {
+  const range = meta?.range || [2, 4];
+  return range[0] === range[1] ? `Exactly ${range[0]}` : `${range[0]}-${range[1]}`;
+}
+
+function renderSelectedRoomBriefing(roomId) {
+  if (!roomId) return `<div class="room-briefing">
+    <div class="brief-title">No chamber selected</div>
+    <div class="brief-objective">The sovereign chooses a room and testees on their phone. The map remains in overview until a chamber is chosen.</div>
+  </div>`;
+  const meta = HOST_ROOM_META[roomId] || {objective:'Complete the chamber trial',range:[2,4],timer:30};
+  const room = HOST_MAP_ROOMS[roomId] || {};
+  return `<div class="room-briefing">
+    <div class="brief-title">${esc(S.selectedRoomName || room.name || 'Selected Chamber')}</div>
+    <div class="brief-objective">${esc(meta.objective)}</div>
+    <div class="brief-grid">
+      <div class="brief-stat">
+        <div class="brief-stat-label">PLAYERS</div>
+        <div class="brief-stat-value">${roomPlayerRequirementText(meta)}</div>
+      </div>
+      <div class="brief-stat">
+        <div class="brief-stat-label">TIMER</div>
+        <div class="brief-stat-value">${meta.timer}s</div>
+      </div>
+      <div class="brief-stat" style="grid-column:1 / -1">
+        <div class="brief-stat-label">CONTROL</div>
+        <div class="brief-stat-value">Captain chooses players on phone</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLaunchStatus(roomId, testeeCount) {
+  if (!roomId) return '';
+  const meta = HOST_ROOM_META[roomId] || {range:[2,4]};
+  const [min, max] = meta.range;
+  if (testeeCount < min) {
+    const needed = min - testeeCount;
+    return `<div class="launch-status waiting">Need ${needed} more knight${needed===1?'':'s'}.</div>`;
+  }
+  if (testeeCount > max) {
+    return `<div class="launch-status waiting">Too many knights selected.</div>`;
+  }
+  return `<div class="launch-status ready">Ready to launch.</div>`;
+}
+
 function renderCaptainHub() {
   const cap = S.captainName;
   const capColor = (S.players || []).find(p => p.name === cap)?.color || 'var(--gold)';
@@ -1318,21 +1584,69 @@ function renderCaptainHub() {
     <div class="phase-kicker">Round ${S.round || '—'}</div>
     <div class="cap-name" style="color:${capColor}">${esc(cap || '—')}</div>
     <div class="phase-sub">IS SOVEREIGN THIS ROUND</div>
-    <div class="divider" style="max-width:320px;margin:10px auto"></div>
-    <div style="font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-bottom:4px">SELECTED CHAMBER</div>
-    <div class="room-label">${S.selectedRoomName || '— awaiting selection —'}</div>
+    <div class="divider" style="max-width:320px;margin:8px auto"></div>
     ${renderRoomScene(S.selectedRoom, S.selectedRoom ? 'Prepare the chamber and choose who enters' : 'Choose a chamber for the next trial', renderSceneFigures(testees, -1))}
-    ${S.selectedRoom ? renderRoomGuide(S.selectedRoom) : ''}
+    ${renderSelectedRoomBriefing(S.selectedRoom)}
+    ${renderLaunchStatus(S.selectedRoom, testees.length)}
     ${testees.length ? `
-      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">KNIGHTS SELECTED FOR TRIAL</div>
+      <div style="font-size:.5rem;color:var(--muted);letter-spacing:.1em;margin:8px 0 6px">KNIGHTS SELECTED</div>
       <div class="knight-chips">${knightChips}</div>
     ` : `<p style="font-size:.52rem;color:var(--muted);margin:12px 0">Sovereign is choosing on their device…</p>`}
-    <div class="divider" style="max-width:320px;margin:10px auto"></div>
+    ${S.selectedRoom ? renderRoomGuide(S.selectedRoom) : ''}
+    <div class="divider" style="max-width:320px;margin:8px auto"></div>
     <p style="font-size:.48rem;color:var(--border2);letter-spacing:.08em">↓ captain controls are on their phone ↓</p>
   </div>`;
 }
 
 // ── Dungeon Trial ──────────────────────────────────────────────────────
+function renderReadyChecklist() {
+  const testees = S.selectedTestees || [];
+  const ready = S.preChallengeReady || {};
+  if (!testees.length) return '<p class="label center-text">No knights selected.</p>';
+  return `<div class="ready-list">
+    ${testees.map(n => {
+      const pl = (S.players || []).find(p => p.name === n);
+      const isReady = !!ready[n];
+      const isOffline = pl && !pl.connected;
+      const state = isOffline ? 'DISCONNECTED' : isReady ? 'READY' : 'WAITING';
+      const cls = isOffline ? ' is-offline' : isReady ? ' is-ready' : '';
+      return `<div class="ready-row${cls}">
+        <div class="testee-pip" style="background:${pl?.color || '#666'}"></div>
+        <div class="ready-name" style="color:${pl?.color || 'var(--text)'}">${esc(n)}</div>
+        <div class="ready-state">${state}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderPreChallengeHost() {
+  const testees = S.selectedTestees || [];
+  const ready = S.preChallengeReady || {};
+  const readyCount = testees.filter(n => ready[n]).length;
+  const t = ROOM_TUTORIALS[S.selectedRoom] || {};
+  const allReady = testees.length > 0 && readyCount === testees.length;
+  return `<div class="center-text">
+    <div class="phase-kicker">Instruction Council</div>
+    <div class="phase-title">${esc(S.selectedRoomName || 'Selected Chamber')}</div>
+    <div class="phase-sub">Selected knights must confirm before the challenge begins</div>
+    <div class="divider" style="max-width:360px;margin:8px auto"></div>
+    ${renderRoomScene(S.selectedRoom, 'Knights read the chamber briefing', renderSceneFigures(testees, -1))}
+    ${renderSelectedRoomBriefing(S.selectedRoom)}
+    <div class="launch-status ${allReady ? 'ready' : 'waiting'}">
+      ${allReady ? 'All knights ready. Beginning challenge...' : `Waiting for selected players to confirm instructions: ${readyCount} / ${testees.length}`}
+    </div>
+    ${renderReadyChecklist()}
+    ${t.goal ? `
+      <div class="room-briefing">
+        <div class="brief-stat-label">HOST WATCHES FOR</div>
+        <div class="brief-objective">${esc(t.hostIntro || t.rules || t.goal)}</div>
+        <div class="brief-stat-label" style="margin-top:8px">RULES</div>
+        <div class="brief-objective">${esc(t.rules || t.goal)}</div>
+      </div>
+    ` : ''}
+  </div>`;
+}
+
 function renderDungeonTrial() {
   const d = S.dungeon || {};
   const testees = S.selectedTestees || [];
@@ -1576,6 +1890,11 @@ const ROOM_TUTORIALS = {
   crisis:{goal:"Knights rank a list of castle crises by urgency. The alien's list has one crisis replaced.",rules:"Read rankings aloud. The knight who ranked something no one else had is suspicious.",hostIntro:"Go through each crisis. Ask: did anyone not have this on their list?",playerHint:"Rank confidently. If you don't recognise an item, it may be your alien crisis."},
   checksum:{goal:"Knights recall a cipher sequence shown briefly at the start. The alien's sequence is slightly different.",rules:"Write the sequence from memory. Compare — whoever recalled a different sequence is suspect.",hostIntro:"Show the cipher for 5 seconds, then cover it. Reveal all answers and compare.",playerHint:"Focus hard on the sequence. If yours feels wrong, trust your memory anyway."},
   quarantine:{goal:"Knights sort items into two groups. The alien's sorting key is inverted.",rules:"Compare group assignments. The knight with a mirrored sort may be the alien.",hostIntro:"Reveal all sorts. Look for someone whose A and B groups are swapped.",playerHint:"Sort decisively. A swapped sort is the most common alien tell."},
+  'war-map':{goal:"Knights choose a tactical route. Humans protect villagers; traitors optimize the raid.",rules:"Reveal every route. The suspicious player may justify speed, access, or attack value instead of safety.",hostIntro:"Ask each knight why their route serves the castle. Listen for a mission that protects the wrong side.",playerHint:"Pick quickly and explain the mission behind your route."},
+  'torch-signal':{goal:"Knights choose a torch signal. Humans warn or rescue; traitors open gates or misdirect guards.",rules:"Reveal each signal. The traitor's signal often sounds useful while helping attackers.",hostIntro:"Read the human objective, then ask how each signal would affect the outer watch.",playerHint:"A signal can sound useful while serving the wrong side."},
+  'relic-vault':{goal:"Knights sort relics into two groups. Humans protect the vault; traitors decide what to steal or abandon.",rules:"Compare piles. A traitor may value portable, sellable, or strategic relics instead of sacred priorities.",hostIntro:"Ask for one reason per pile, then compare who protected versus exploited the same objects.",playerHint:"Explain why each relic belongs in your pile."},
+  'market-rumor':{goal:"Knights write one market rumor. Humans calm the village; traitors spread panic during the siege.",rules:"Reveal each rumor. Suspicious rumors escalate fear, movement, or distrust.",hostIntro:"Read each rumor aloud. Ask whether it would steady the village or make the siege worse.",playerHint:"A rumor that feels dramatic may reveal the traitor prompt."},
+  'alibi-ledger':{goal:"Knights write a short alibi. Loyal knights answer the same incident; traitors answer a changed incident.",rules:"Reveal all alibis and compare the event details. Look for someone describing the wrong bell, place, item, or witness.",hostIntro:"Read each alibi aloud. Ask the table: who sounds like they were in another part of the castle?",playerHint:"Keep thy alibi simple and believable."},
   blackbox:{goal:'Knights answer questions about a "royal record" read aloud. The alien heard a different record.',rules:"Compare answers. Differing facts point to the alien.",hostIntro:"Read the record clearly once. After answers are collected, ask: did anything differ?",playerHint:"Listen carefully. One detail in your record may differ — that's your tell."},
   'royal-whisper':{goal:"Two knights each whisper a single clue about themselves. One is given a secret alien clue.",rules:"The clue-giver speaks in private. The court guesses which clue was alien-influenced.",hostIntro:"Have each knight whisper to the host. Then read both clues aloud for discussion.",playerHint:"Make your clue genuine but vague. Aliens should mimic the human clue style."},
   'dungeon-trial':{goal:"All testees answer the same trivia question simultaneously. Wrong-answerers face the Poisoned Goblet.",rules:"Answer quickly — only one chance. Wrong answers lead to a 50/50 cursed goblet. Cursed Spirits lose their vote.",hostIntro:"Show the question on screen. All knights answer privately. Then reveal who was right.",playerHint:"Think before you tap — no changing your answer. Cursed Spirits are still in the game but lose their vote."},
@@ -1656,7 +1975,7 @@ function renderReveal() {
   const last = h[h.length - 1];
   if (!last) return '<p class="label center-text">No results yet.</p>';
 
-  const ROOM_NAMES = { writing:'Writing Chamber',drawing:'Drawing Quarters',deliberation:'Council Chamber',opinion:'Opinion Hall',bioscanner:'Oath Mirror',crisis:'Crisis Council',checksum:'Cipher Relay',quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall','royal-whisper':'The Royal Whisper','dungeon-trial':'The Dungeon Trial','herald-chain':"The Herald's Chain",'throne-vote':'The Throne Room' };
+  const ROOM_NAMES = { writing:'Writing Chamber',drawing:'Drawing Quarters',deliberation:'Council Chamber',opinion:'Opinion Hall',bioscanner:'Oath Mirror',crisis:'Crisis Council',checksum:'Cipher Relay',quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall','royal-whisper':'The Royal Whisper','dungeon-trial':'The Dungeon Trial','herald-chain':"The Herald's Chain",'throne-vote':'The Throne Room','war-map':'The War Map','torch-signal':'Torch Signal','relic-vault':'The Relic Vault','market-rumor':'Market Rumor','alibi-ledger':'The Alibi Ledger' };
   const answers = S.answers || {};
 
   const entries = (last.entries || []).map((e, i) => {
@@ -1665,7 +1984,7 @@ function renderReveal() {
     let display = ans;
     if (last.room === 'drawing' && ans.startsWith('data:image')) {
       display = `<img src="${ans}" style="max-width:130px;border-radius:2px;border:1px solid var(--border2)">`;
-    } else if (last.room === 'quarantine') {
+    } else if (last.room === 'quarantine' || last.room === 'relic-vault') {
       try { const d = JSON.parse(ans); display = `A: ${esc(d.a?.join(', ') || '—')} | B: ${esc(d.b?.join(', ') || '—')}`; } catch { display = esc(ans); }
     } else {
       display = esc(ans);
@@ -1743,16 +2062,34 @@ function renderExtraction() {
 }
 
 // ── Game over ───────────────────────────────────────────────────────────
+function getGameoverCopy(reason) {
+  if (reason === 'humansWin') return { headline:'THE CASTLE IS SAVED!', sub:'The loyal knights found every traitor and sealed the castle.' };
+  if (reason === 'humanEjected') return { headline:'THE TRAITORS TRIUMPH!', sub:'An innocent was condemned, and trust in the court collapsed.' };
+  if (reason === 'aliensWin') return { headline:'THE CASTLE FALLS!', sub:'Too few loyal players remain to stop the traitors.' };
+  if (reason === 'timer') return { headline:'THE CASTLE FALLS!', sub:'Time expired before the traitors were exposed.' };
+  if (reason === 'no-players') return { headline:'THE CASTLE FALLS!', sub:'No loyal court remains to defend the castle.' };
+  return { headline:'THE CASTLE FALLS!', sub:'The traitors seized the castle.' };
+}
+
+function renderResultGif(humansWin) {
+  return `<div class="result-gif ${humansWin ? 'human-win' : 'alien-win'}">
+    ${humansWin ? '' : '<div class="result-moon"></div>'}
+    <div class="result-castle"></div>
+    <div class="result-gate"></div>
+    ${humansWin ? '' : '<div class="result-shadow"></div>'}
+    <div class="result-gif-label">${humansWin ? 'CASTLE SAVED' : 'CASTLE FALLS'}</div>
+  </div>`;
+}
+
 function renderGameover() {
   const reason = S.gameOverReason;
   const humansWin = reason === 'humansWin';
   const cls = humansWin ? 'human-win' : 'alien-win';
-  const headline = humansWin ? 'THE CASTLE IS SAVED!' : reason === 'humanEjected' ? 'THE TRAITORS TRIUMPH!' : 'THE CASTLE FALLS!';
-  const sub = humansWin ? 'All traitors cast to the dungeon. The castle holds.' : reason === 'humanEjected' ? 'An innocent knight was condemned. The traitors claim the keep.' : 'The quest timer expired. The traitors seized the castle.';
+  const { headline, sub } = getGameoverCopy(reason);
   const roles = S.roleNames || [];
 
   return `<div class="center-text">
-    <div style="font-size:2.8rem;margin-bottom:10px">${humansWin ? '🏆' : '🌑'}</div>
+    ${renderResultGif(humansWin)}
     <div class="go-banner ${cls}">${headline}</div>
     <p style="font-size:.55rem;color:var(--muted);margin:8px 0 16px;line-height:2">${sub}</p>
     ${roles.length ? `<div class="roles-grid">
@@ -1787,7 +2124,7 @@ function renderRoster() {
 function renderProbe() {
   const el = document.getElementById('probe-list');
   const h = S.probeHistory || [];
-  const ROOM_SHORT = { writing:'Writing',drawing:'Drawing',deliberation:'Council',opinion:'Opinion',bioscanner:'Oath',crisis:'Crisis',checksum:'Cipher',quarantine:'Apoth.',blackbox:'Archive','royal-whisper':'Whisper','dungeon-trial':'Dungeon','herald-chain':'Herald','throne-vote':'Throne' };
+  const ROOM_SHORT = { writing:'Writing',drawing:'Drawing',deliberation:'Council',opinion:'Opinion',bioscanner:'Oath',crisis:'Crisis',checksum:'Cipher',quarantine:'Apoth.',blackbox:'Archive','royal-whisper':'Whisper','dungeon-trial':'Dungeon','herald-chain':'Herald','throne-vote':'Throne','war-map':'War Map','torch-signal':'Signal','relic-vault':'Vault','market-rumor':'Rumor','alibi-ledger':'Alibi' };
   if (!h.length) { el.innerHTML = '<p style="font-size:.45rem;color:var(--muted)">No evidence yet.</p>'; return; }
   el.innerHTML = [...h].reverse().map(e => `
     <div class="probe-card">

@@ -58,6 +58,8 @@ button:disabled{opacity:.35;cursor:default;transform:none!important}
 .btn-sm{padding:8px 12px;font-size:.55rem}
 .btn-row{display:flex;gap:8px}
 .btn-row button{flex:1}
+.prompt-submit-inline{margin-top:10px}
+.prompt-submit-inline button{font-size:.6rem;padding:14px}
 
 /* ── Input ── */
 input[type=text],input[type=number],select,textarea{
@@ -172,6 +174,22 @@ label{font-size:.55rem;color:var(--muted);display:block;margin-bottom:4px}
 @keyframes alarm{0%,100%{background:#06040a}50%{background:#1a0606}}
 .alarm-bg{animation:alarm 1s infinite}
 
+/* Result animation */
+.result-gif{position:relative;width:min(260px,92vw);height:150px;border:2px solid var(--border2);border-radius:4px;overflow:hidden;background:#090713;box-shadow:inset 0 0 22px rgba(0,0,0,.65);image-rendering:pixelated}
+.result-gif.human-win{border-color:var(--green2);animation:victoryPulse 1.6s infinite}
+.result-gif.alien-win{border-color:var(--purple2);animation:traitorPulse 1.7s infinite}
+.result-castle{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:120px;height:74px;background:linear-gradient(180deg,#5a4524,#2b1d10);border:3px solid var(--gold)}
+.result-castle:before,.result-castle:after{content:'';position:absolute;bottom:0;width:26px;height:96px;background:#3b2b18;border:3px solid var(--gold)}
+.result-castle:before{left:-30px}.result-castle:after{right:-30px}
+.result-gate{position:absolute;left:50%;bottom:24px;width:42px;height:46px;transform:translateX(-50%);background:#120a05;border:2px solid #000;animation:gateClose 1.2s infinite steps(4)}
+.result-moon{position:absolute;right:28px;top:18px;width:42px;height:42px;border-radius:50%;background:var(--purple2);box-shadow:0 0 22px rgba(155,89,182,.75)}
+.result-shadow{position:absolute;inset:0;background:linear-gradient(110deg,transparent 0%,rgba(155,89,182,.35) 45%,transparent 70%);animation:shadowSweep 1.4s infinite}
+.result-gif-label{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:.5rem;letter-spacing:.12em;color:var(--gold2);text-shadow:2px 2px 0 #000}
+@keyframes victoryPulse{0%,100%{box-shadow:0 0 10px rgba(80,220,120,.35),inset 0 0 22px rgba(0,0,0,.65)}50%{box-shadow:0 0 28px rgba(80,220,120,.8),inset 0 0 18px rgba(80,220,120,.18)}}
+@keyframes traitorPulse{0%,100%{box-shadow:0 0 10px rgba(155,89,182,.35),inset 0 0 22px rgba(0,0,0,.7)}50%{box-shadow:0 0 30px rgba(155,89,182,.85),inset 0 0 20px rgba(155,89,182,.18)}}
+@keyframes gateClose{0%{clip-path:inset(0 42% 0 42%)}60%,100%{clip-path:inset(0 0 0 0)}}
+@keyframes shadowSweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--panel)}::-webkit-scrollbar-thumb{background:var(--border2)}
 
@@ -212,7 +230,10 @@ const cleanName=v=>String(v||'').trim().replace(/[<>"'`\\]/g,'').slice(0,14);
 
 const ROOM_NAMES={writing:'Writing Chamber',drawing:'Drawing Quarters',deliberation:'Council Chamber',
   opinion:'Opinion Hall',bioscanner:'Oath Mirror',crisis:'Crisis Council',checksum:'Cipher Relay',
-  quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall'};
+  quarantine:'Apothecary Ward',blackbox:'Royal Archive Recall','royal-whisper':'The Royal Whisper',
+  'dungeon-trial':'The Dungeon Trial','herald-chain':"The Herald's Chain",'throne-vote':'The Throne Room',
+  'war-map':'The War Map','torch-signal':'Torch Signal','relic-vault':'The Relic Vault','market-rumor':'Market Rumor',
+  'alibi-ledger':'The Alibi Ledger'};
 
 // ══════════════════════════════════════════════════════
 // JOIN
@@ -395,10 +416,14 @@ function render(){
   const tb=document.getElementById('phone-test-badge');
   if(tb)tb.style.display=S.testMode?'':'none';
 
+  const promptOwnsBottomBar=hasActivePromptSubmit();
+
   // Show alarm button only for captain in hub or reveal phase
   const isCap=S.amCaptain;
   const alarmPhases=['captain-hub','reveal'];
-  if(S.canPushButton&&alarmPhases.includes(S.phase)){
+  if(promptOwnsBottomBar){
+    bb.style.display='';
+  } else if(S.canPushButton&&alarmPhases.includes(S.phase)){
     bb.style.display='';if(ab)ab.disabled=false;
   } else {
     bb.style.display='none';
@@ -408,6 +433,7 @@ function render(){
     case 'lobby':     renderLobby(content);break;
     case 'role-reveal':renderWaitForRole(content);break;
     case 'captain-hub':isCap?renderCaptain(content):renderWaiting(content,'captain-hub');break;
+    case 'pre-challenge':renderPreChallenge(content);break;
     case 'room-waiting':
       if(S.isMyTurn)renderWaitingForTurn(content);
       else if(S.amTestee&&S.myTesteeIdx>S.roomTesteeIdx)renderWaitingForTurn(content);
@@ -547,6 +573,56 @@ function renderWaiting(el,phase){
     </div>`;
 }
 
+function renderPreChallenge(el){
+  const selected=S.amTestee;
+  const roomId=S.selectedRoom;
+  const roomName=S.selectedRoomName||ROOM_NAMES[roomId]||'Selected Chamber';
+  const t=ROOM_TUTORIALS[roomId]||{};
+  const ready=!!S.preChallengeReady?.[MY.name];
+  const selectedNames=S.selectedTestees||[];
+  const readyCount=selectedNames.filter(n=>S.preChallengeReady?.[n]).length;
+  if(!selected){
+    el.innerHTML=`
+      <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:20px;text-align:center">
+        <div class="waiting-icon">📖</div>
+        <h2>Instruction Council</h2>
+        <p style="font-size:.58rem;line-height:1.9;color:var(--muted)">Selected knights are reading their chamber instructions.</p>
+        <div class="stone" style="width:100%;text-align:center">
+          <div class="label">Next Chamber</div>
+          <p style="color:var(--gold2);line-height:1.8">${esc(roomName)}</p>
+          <p class="muted" style="font-size:.48rem;margin-top:6px">${readyCount}/${selectedNames.length} knights ready</p>
+        </div>
+        ${MY.role==='alien'&&!S.isCursedSpirit?renderHackPanel():''}
+      </div>`;
+    return;
+  }
+  el.innerHTML=`
+    <div class="fade" style="display:flex;flex-direction:column;gap:12px">
+      <div class="stone gold-border" style="text-align:center">
+        <div class="label">📖 Read Before Entering</div>
+        <h2 style="margin-top:8px;color:var(--gold2)">${esc(roomName)}</h2>
+        <p class="muted" style="margin-top:6px">${ready?'Waiting for the other selected knights...':'Read the chamber rules, then mark thyself ready.'}</p>
+      </div>
+      <div class="stone">
+        <div class="label">Goal</div>
+        <p style="font-size:.55rem;line-height:1.85;color:var(--text)">${esc(t.goal||'Complete the chamber trial without revealing thy secret role.')}</p>
+        <div class="label" style="margin-top:12px;color:var(--gold)">Knight's Hint</div>
+        <p style="font-size:.55rem;line-height:1.85;color:var(--gold2)">${esc(t.playerHint||'Keep thy device hidden and answer naturally.')}</p>
+      </div>
+      <div class="stone" style="text-align:center">
+        <div class="label">Ready Count</div>
+        <p style="font-size:.62rem;color:var(--gold2);margin-top:6px">${readyCount} / ${selectedNames.length}</p>
+      </div>
+      <button class="btn-primary" ${ready?'disabled':''} onclick="confirmInstructions()" style="font-size:.6rem;padding:14px">
+        ${ready?'✓ Ready — awaiting others':'Ready — begin challenge'}
+      </button>
+    </div>`;
+}
+
+function confirmInstructions(){
+  act('confirm-instructions');
+}
+
 function renderWaitingForTurn(el){
   el.innerHTML=`
     <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:20px;text-align:center">
@@ -565,8 +641,13 @@ function renderCaptain(el){
     {id:'opinion',name:'Opinion Hall',icon:'opinion',desc:'Suspicious values'},
     {id:'bioscanner',name:'Oath Mirror',icon:'bioscanner',desc:'Hack-immune oath check'},
     {id:'crisis',name:'Crisis Council',icon:'crisis',desc:'Debatable priorities'},
+    {id:'war-map',name:'The War Map',icon:'crisis',desc:'Routes reveal different missions'},
     {id:'checksum',name:'Cipher Relay',icon:'checksum',desc:'Hackable memory codes'},
+    {id:'torch-signal',name:'Torch Signal',icon:'checksum',desc:'Signals reveal rescue or betrayal'},
     {id:'quarantine',name:'Apothecary Ward',icon:'quarantine',desc:'Sort by hidden criteria'},
+    {id:'relic-vault',name:'The Relic Vault',icon:'blackbox',desc:'Sort relics by secret motive'},
+    {id:'market-rumor',name:'Market Rumor',icon:'opinion',desc:'Write calm or panic into the village'},
+    {id:'alibi-ledger',name:'The Alibi Ledger',icon:'blackbox',desc:'Write alibis — traitors recall a different incident'},
     {id:'blackbox',name:'Royal Archive Recall',icon:'blackbox',desc:'Late memory contradiction',latePool:true},
     {id:'royal-whisper',name:'The Royal Whisper',icon:'writing',desc:'Word clue: loyal hear truth, traitors hear a lie'},
     {id:'dungeon-trial',name:'The Dungeon Trial',icon:'deliberation',desc:'All answer at once — wrong answers face the poisoned goblet'},
@@ -677,8 +758,13 @@ function renderRoomVignette(d){
     opinion:{icon:'opinion',props:['🗣️','⚜️'],objective:'Reveal suspicious values'},
     bioscanner:{icon:'bioscanner',props:['🪞','🔔'],objective:'Match the sacred seals'},
     crisis:{icon:'crisis',props:['🔥','🛡️'],objective:'Rank the castle crisis'},
+    'war-map':{icon:'crisis',props:['MAP','SHIELD'],objective:'Choose the mission route'},
     checksum:{icon:'checksum',props:['🔐','🗝️'],objective:'Recall the cipher order'},
+    'torch-signal':{icon:'checksum',props:['FIRE','TOWER'],objective:'Send the signal'},
     quarantine:{icon:'quarantine',props:['🌿','⚗️'],objective:'Sort suspicious items'},
+    'relic-vault':{icon:'blackbox',props:['CROWN','KEY'],objective:'Sort the relics'},
+    'market-rumor':{icon:'opinion',props:['SCROLL','MARKET'],objective:'Spread one rumor'},
+    'alibi-ledger':{icon:'blackbox',props:['📖','🕯️'],objective:'Write a believable alibi'},
     blackbox:{icon:'blackbox',props:['📚','🔎'],objective:'Remember the castle record'},
     'herald-chain':{icon:'writing',props:['📜','🔗'],objective:'Pass the word — match the theme'},
     'throne-vote':{icon:'deliberation',props:['👑','⚖️'],objective:'Rate the statement in secret'},
@@ -695,6 +781,20 @@ function renderRoomVignette(d){
 }
 
 let promptState=null;
+function hasActivePromptSubmit(){
+  if(!promptState||S.phase!=='room-active')return false;
+  if(promptState.roomId==='dungeon-trial')return false;
+  if(promptState.roomId==='throne-vote')return S.myThroneAnswer==null;
+  return S.isMyTurn;
+}
+
+function renderPromptSubmitButton(d){
+  if(d.roomId==='dungeon-trial')return '<p class="muted" style="text-align:center;margin-top:8px">Tap an answer to submit immediately.</p>';
+  const label=d.roomId==='throne-vote'?'★ Submit Rating ›':'⚔ Submit Answer ›';
+  const disabled=d.roomId==='throne-vote'?' disabled id="inline-star-submit"':'';
+  return `<div class="prompt-submit-inline"><button class="btn-primary"${disabled} onclick="submitAnswer()">${label}</button></div>`;
+}
+
 function showPrompt(d){
   promptState=d;glyphSeq=[];
   const el=document.getElementById('content');
@@ -706,6 +806,8 @@ function showPrompt(d){
   let inputHtml='';
   switch(d.roomId){
     case 'writing':
+    case 'market-rumor':
+    case 'alibi-ledger':
       inputHtml=`<textarea id="ans" rows="4" placeholder="Write thy answer…" maxlength="120" style="resize:vertical"></textarea>`;break;
     case 'drawing':
       inputHtml=`<canvas id="draw-canvas" height="200"></canvas>
@@ -714,6 +816,8 @@ function showPrompt(d){
           <input type="color" id="draw-color" value="#c9a84c" style="width:36px;height:28px;border:none;background:none;cursor:pointer">
         </div>`;break;
     case 'deliberation':
+    case 'war-map':
+    case 'torch-signal':
       inputHtml=`<div class="delib-choices">${(d.choices||[]).map((c,i)=>`
         <div class="delib-choice" onclick="selectDelib(this,'${c.replace(/'/g,"\\'")}')">
           <span style="color:var(--gold)">${'ABC'[i]}.</span> ${c}
@@ -776,6 +880,7 @@ function showPrompt(d){
           </li>`).join('')}
         </ul><input type="hidden" id="ans" value="">`;break;
     case 'quarantine':
+    case 'relic-vault':
       const qitems=[...(d.items||[])];
       const lbl=d.labels||{a:'A',b:'B'};
       inputHtml=`<p class="muted" style="margin-bottom:6px">Drag or tap to cycle: pool → A → B → pool.</p>
@@ -850,11 +955,12 @@ function showPrompt(d){
       </div>
       ${d.text?`<div class="prompt-box">${esc(d.text)}</div>`:''}
       <div id="input-area">${inputHtml}</div>
+      ${renderPromptSubmitButton(d)}
     </div>`;
 
   if(d.roomId==='drawing')setTimeout(initCanvas,50);
   if(d.roomId==='crisis')setTimeout(initRankDrag,50);
-  if(d.roomId==='quarantine')setTimeout(initBinDrag,50);
+  if(d.roomId==='quarantine'||d.roomId==='relic-vault')setTimeout(initBinDrag,50);
   if(d.roomId==='blackbox')startBlackboxCountdown();
 }
 
@@ -862,7 +968,7 @@ function getAnswer(){
   const d=promptState;if(!d)return'';
   if(d.roomId==='drawing'){const c=document.getElementById('draw-canvas');return c?c.toDataURL('image/png'):'';}
   if(d.roomId==='crisis'){const l=document.getElementById('rank-list');return l?[...l.querySelectorAll('.rank-item')].map(i=>i.dataset.val).join(' > '):'';}
-  if(d.roomId==='quarantine'){
+  if(d.roomId==='quarantine'||d.roomId==='relic-vault'){
     const a=[...document.getElementById('bin-a-items')?.querySelectorAll('.sort-chip')||[]].map(c=>c.dataset.val);
     const b=[...document.getElementById('bin-b-items')?.querySelectorAll('.sort-chip')||[]].map(c=>c.dataset.val);
     return JSON.stringify({a,b});
@@ -887,6 +993,8 @@ function selectStar(n){
   }
   const btn=document.getElementById('star-submit');
   if(btn)btn.disabled=false;
+  const inlineBtn=document.getElementById('inline-star-submit');
+  if(inlineBtn)inlineBtn.disabled=false;
 }
 
 function submitAnswer(){
@@ -900,6 +1008,7 @@ function submitAnswer(){
   } else {
     act('submit-answer',{answer:ans});
   }
+  promptState=null;
   // Restore bottombar to alarm button (hidden until phase allows it)
   const bb=document.getElementById('bottombar');
   bb.innerHTML=`<button class="btn-danger" id="alarm-btn" onclick="pushButton()" style="animation:pulseRed 1.5s infinite">🔔 SOUND THE ALARM</button>`;
@@ -917,6 +1026,11 @@ const ROOM_TUTORIALS={
   crisis:{goal:"Rank castle crises by urgency. The alien's list has one crisis replaced.",playerHint:"Rank confidently. If thou dost not recognise an item, it may be thy alien crisis."},
   checksum:{goal:"Recall a cipher sequence. The alien's sequence is slightly different.",playerHint:'Focus hard. Trust thy memory even if something feels off.'},
   quarantine:{goal:"Sort items into two groups. The alien's sorting key is inverted.",playerHint:'Sort decisively. A swapped sort is the most common alien tell.'},
+  'war-map':{goal:'Choose a route on the war map. Humans protect villagers; traitors optimize the raid.',playerHint:'Pick quickly and explain the mission behind thy route.'},
+  'torch-signal':{goal:'Choose the torch signal to send. Humans warn or rescue; traitors invite attack or misdirect guards.',playerHint:'A signal can sound useful while serving the wrong side.'},
+  'relic-vault':{goal:'Sort relics into two groups. Humans protect the vault; traitors decide what to steal or abandon.',playerHint:'Explain why each relic belongs in thy pile.'},
+  'market-rumor':{goal:'Write one rumor. Humans calm the village; traitors spread panic during the siege.',playerHint:'A rumor that feels dramatic may reveal the traitor prompt.'},
+  'alibi-ledger':{goal:'Write a short alibi for the incident. Loyal players saw the same event; traitors saw a different one.',playerHint:'Keep thy alibi simple and concrete. Too much detail may expose thee.'},
   blackbox:{goal:"Answer questions about a record. The alien heard a different record.",playerHint:'Listen carefully. One detail in thy record may differ.'},
   'royal-whisper':{goal:'Give one clue about a secret word. The alien receives a different word.',playerHint:'Make thy clue genuine but vague. Mimic the human clue style.'},
   'dungeon-trial':{goal:'Answer a trivia question. Wrong-answerers face the Poisoned Goblet — one goblet is cursed.',playerHint:'Think before thou taps — no changing thy answer. Cursed Spirits lose their vote.'},
@@ -1049,7 +1163,7 @@ function renderRevealPhase(el){
 
 function formatAns(room,ans){
   if(room==='drawing'&&ans?.startsWith('data:image'))return`<img src="${ans}" style="max-width:160px;border-radius:3px">`;
-  if(room==='quarantine'){try{const d=JSON.parse(ans);return`A:${d.a?.join(', ')||'—'} | B:${d.b?.join(', ')||'—'}`;}catch{}}
+  if(room==='quarantine'||room==='relic-vault'){try{const d=JSON.parse(ans);return`A:${d.a?.join(', ')||'—'} | B:${d.b?.join(', ')||'—'}`;}catch{}}
   return esc(ans||'—');
 }
 
@@ -1098,15 +1212,35 @@ function renderExtraction(el){
 }
 
 // ── Game over ─────────────────────────────────────────────
+function getGameoverCopy(reason){
+  if(reason==='humansWin')return{title:'CASTLE SAVED!',text:'The loyal knights found every traitor and sealed the castle.'};
+  if(reason==='humanEjected')return{title:'TRAITORS WIN!',text:'An innocent was condemned, and trust in the court collapsed.'};
+  if(reason==='aliensWin')return{title:'CASTLE FALLS!',text:'Too few loyal players remain to stop the traitors.'};
+  if(reason==='timer')return{title:'CASTLE FALLS!',text:'Time expired before the traitors were exposed.'};
+  if(reason==='no-players')return{title:'CASTLE FALLS!',text:'No loyal court remains to defend the castle.'};
+  return{title:'CASTLE FALLS!',text:'The traitors seized the castle.'};
+}
+
+function renderResultGif(humansWin){
+  return`<div class="result-gif ${humansWin?'human-win':'alien-win'}">
+    ${humansWin?'':'<div class="result-moon"></div>'}
+    <div class="result-castle"></div>
+    <div class="result-gate"></div>
+    ${humansWin?'':'<div class="result-shadow"></div>'}
+    <div class="result-gif-label">${humansWin?'CASTLE SAVED':'CASTLE FALLS'}</div>
+  </div>`;
+}
+
 function renderGameover(el){
   const reason=S.gameOverReason;
   const humansWin=reason==='humansWin';
+  const copy=getGameoverCopy(reason);
   const roles=S.roleNames||[];
   el.innerHTML=`
     <div class="fade" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:10px;text-align:center">
-      <div style="font-size:3rem">${humansWin?'🏆':'👽'}</div>
-      <h1 style="color:${humansWin?'var(--green2)':'var(--purple2)'}">${humansWin?'CASTLE SAVED!':reason==='humanEjected'?'TRAITORS WIN!':'CASTLE FALLS!'}</h1>
-        <p class="muted">${humansWin?'The castle holds.':reason==='humanEjected'?'An innocent was condemned.':'The traitors seized the castle.'}</p>
+      ${renderResultGif(humansWin)}
+      <h1 style="color:${humansWin?'var(--green2)':'var(--purple2)'}">${copy.title}</h1>
+        <p class="muted">${copy.text}</p>
       ${roles.length?`<div class="stone" style="width:100%;text-align:left">
         <div class="label">All roles revealed</div>
         ${roles.map(p=>`<div class="player-row">

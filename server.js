@@ -72,17 +72,52 @@ const ROOMS={
       {human:'A fire alarm sounds near sleeping servants. Rank first to last:',alien:'A theft alarm sounds near sleeping servants. Rank first to last:',items:['Sound general alarm','Seal the doors','Send one scout','Evacuate section']},
       {human:'Food stores are spoiled before a siege. Rank first to last:',alien:'Medical stores are spoiled before a siege. Rank first to last:',items:['Isolate supplies','Check servant symptoms','Call nearby abbey','Ration remaining stock']},
     ]},
+  'war-map':{id:'war-map',name:'The War Map',icon:'crisis',testeeRange:[2,4],timerSeconds:30,
+    prompts:[
+      {human:'Choose the safest route to move villagers through the forest.',alien:'Choose the fastest route to move raiders through the forest.',choices:['North road','Old bridge','Hidden ravine','River path']},
+      {human:'Choose where loyal scouts should hide before dawn.',alien:'Choose where traitor scouts should light the ambush signal.',choices:['Miller hill','Dry well','Market roofs','South orchard']},
+      {human:'Choose the safest gate for evacuating children.',alien:'Choose the weakest gate for raiders to strike.',choices:['North gate','River postern','Old sally port','Chapel arch']},
+      {human:'Choose the route that avoids enemy patrols.',alien:'Choose the route that reaches the treasury fastest.',choices:['Fog road','Goat trail','Bridge road','Old aqueduct']},
+    ]},
   checksum:{id:'checksum',name:'Cipher Relay',icon:'checksum',testeeRange:[2,2],timerSeconds:35,
     prompts:[
       {captain:'Memorize and report three gate codes in order.',items:['A1','B2','C3','D4','E5','F6','G7','H8','J9','K0']},
       {captain:'Memorize and report three banner colors in order.',items:['RED','BLUE','GOLD','GREEN','WHITE','BLACK','SILVER','VIOLET','AMBER','CYAN']},
       {captain:'Memorize and report three treasury stamps in order.',items:['WAX','IRON','SALT','GLASS','BONE','SILK','WOOD','COAL','PEARL','CLAY']},
     ]},
+  'torch-signal':{id:'torch-signal',name:'Torch Signal',icon:'checksum',testeeRange:[2,4],timerSeconds:25,
+    prompts:[
+      {human:'Send a torch signal warning the outer watch.',alien:'Send a torch signal telling raiders the gate is open.',choices:['Three short flashes','One long flame','Circle the torch','Cover and uncover twice']},
+      {human:'Send a signal that calls healers to the east wall.',alien:'Send a signal that draws guards away from the east wall.',choices:['Blue lantern','Twin flames','Slow wave','High steady burn']},
+      {human:'Send a signal that says villagers should stay hidden.',alien:'Send a signal that says villagers should run into the road.',choices:['Low covered flame','Rapid sparks','Beacon on tower','Torch pointed north']},
+      {human:'Send a signal asking nearby allies for rescue.',alien:'Send a signal inviting raiders through the postern.',choices:['Green glass flame','Two tower beacons','Crossed torches','Single gate torch']},
+    ]},
   quarantine:{id:'quarantine',name:'Apothecary Ward',icon:'quarantine',testeeRange:[2,4],timerSeconds:35,
     prompts:[
       {human:{a:'SAFE TO TOUCH',b:'NEEDS GLOVES'},alien:{a:'VALUABLE',b:'WORTHLESS'},items:['Cracked visor','Silver wrench','Moss sample','Sealed bread','Damp glove','Royal goblet']},
       {human:{a:'KEEP ABOARD',b:'THROW OVERBOARD'},alien:{a:'PROOF OF GUILT',b:'HARMLESS CLUTTER'},items:['Bloody towel','Empty vial','Captain note','Broken lantern','Fresh apple','Locked box']},
       {human:{a:'CLEAN',b:'CONTAMINATED'},alien:{a:'MAGICAL',b:'ORDINARY'},items:['Blue crystal','Rusty chain','Wet boots','Glowing coin','Medic bag','Old map']},
+    ]},
+  'relic-vault':{id:'relic-vault',name:'The Relic Vault',icon:'blackbox',testeeRange:[2,4],timerSeconds:35,
+    prompts:[
+      {human:{a:'PROTECT',b:'MOVE AWAY'},alien:{a:'STEAL',b:'LEAVE BEHIND'},items:['Moon crown','Saint candle','Iron key','Dragon bone','Blessed coin','Old map']},
+      {human:{a:'LOCK IN VAULT',b:'HIDE IN CHAPEL'},alien:{a:'SELL QUICKLY',b:'LEAVE AS BAIT'},items:['Silver chalice','Abbey seal','Glass dagger','Queen ledger','Sun amulet','Ruby key']},
+      {human:{a:'SAVE FIRST',b:'RISK LATER'},alien:{a:'TAKE FIRST',b:'BREAK LATER'},items:['Oath mirror','Crown jewel','Saint bell','War treaty','Relic box','Dragon scale']},
+    ]},
+  'market-rumor':{id:'market-rumor',name:'Market Rumor',icon:'opinion',testeeRange:[2,4],timerSeconds:30,
+    prompts:[
+      {human:'Write a rumor that keeps villagers calm during the siege.',alien:'Write a rumor that makes villagers panic during the siege.'},
+      {human:'Write one sentence convincing merchants to keep their stalls open.',alien:'Write one sentence convincing merchants to flee the square.'},
+      {human:'Write a market rumor that makes the guard look prepared.',alien:'Write a market rumor that makes the guard look doomed.'},
+      {human:'Write a tavern whisper that keeps families indoors and safe.',alien:'Write a tavern whisper that sends families toward the gate.'},
+    ]},
+  'alibi-ledger':{id:'alibi-ledger',name:'The Alibi Ledger',icon:'blackbox',testeeRange:[2,4],timerSeconds:35,
+    prompts:[
+      {human:'The chapel bell rang during the feast. Write where you were and what you were carrying.',alien:'The gate bell rang during the raid. Write where you were and what you were carrying.'},
+      {human:'A candle went out in the royal archive. Write who you saw nearby and what they were doing.',alien:'A torch went out in the lower dungeon. Write who you saw nearby and what they were doing.'},
+      {human:'The crown was found missing after the council meeting. Write your alibi in one sentence.',alien:'The treasury key was found missing after the guard change. Write your alibi in one sentence.'},
+      {human:'A servant heard footsteps near the west tower. Write why you were awake at that hour.',alien:'A guard heard whispers near the east gate. Write why you were awake at that hour.'},
+      {human:'The healer says someone entered the infirmary before dawn. Write what reason you had to be there.',alien:'The jailer says someone entered the dungeon before dawn. Write what reason you had to be there.'},
     ]},
   'dungeon-trial':{id:'dungeon-trial',name:'The Dungeon Trial',icon:'deliberation',testeeRange:[2,4],timerSeconds:30,
     questions:[
@@ -150,7 +185,7 @@ function toPlayer(name,ev,d){for(const[,c]of clients)if(c.type==='player'&&c.nam
 // ═══════════════════════════════ GAME STATE ═══════════════════════════════
 function fresh(){
   return{phase:'lobby',players:[],round:0,captainIdx:0,selectedRoom:null,selectedTestees:[],
-    answers:{},probeHistory:[],shipTimerMax:0,shipTimerLeft:0,
+    answers:{},preChallengeReady:{},probeHistory:[],shipTimerMax:0,shipTimerLeft:0,
     activeHacks:{},usedHacks:{},buttonPushersUsed:new Set(),
     extraction:{pusher:null,suspects:[],votes:{}},roomTesteeIdx:0,
     royalWhisperPair:null,royalWhisperSecrets:{},
@@ -178,6 +213,8 @@ function pubState(){
     selectedRoom:G.selectedRoom,selectedRoomName:G.selectedRoom?ROOMS[G.selectedRoom]?.name:null,
     selectedTestees:G.selectedTestees,roomTesteeIdx:G.roomTesteeIdx,
     currentTestee:G.selectedTestees[G.roomTesteeIdx],
+    preChallengeReady:G.preChallengeReady,
+    preChallengeRequired:G.phase==='pre-challenge'?G.selectedTestees.length:0,
     shipTimerLeft:G.shipTimerLeft,shipTimerMax:G.shipTimerMax,roomTimerLeft:roomLeft,
     extraction:G.extraction,probeHistory:G.probeHistory,
     buttonPushersUsed:[...G.buttonPushersUsed],
@@ -193,6 +230,7 @@ function pubState(){
       answers:['reveal','gameover'].includes(G.phase)?G.throneVote.answers:null,
     }:null,
     alienNames:G.phase==='gameover'?G.players.filter(p=>p.role==='alien').map(p=>p.name):null,
+    roleNames:G.phase==='gameover'?G.players.map(p=>({name:p.name,role:p.role,alive:p.alive})):null,
     dungeon:G.dungeon?{
       question:G.dungeon.question,
       options:G.dungeon.options,
@@ -265,7 +303,7 @@ function sendPrompt(playerName){
   const p=room.prompts[pidx];
   let payload={roomId:room.id,roomName:room.name,timerSeconds:room.timerSeconds};
 
-  if(room.id==='deliberation'){
+  if(room.id==='deliberation'||room.id==='war-map'||room.id==='torch-signal'){
     payload.choices=p.choices;
     payload.text=showAlien?p.alien:p.human;
   } else if(room.id==='bioscanner'||room.id==='checksum'){
@@ -276,7 +314,7 @@ function sendPrompt(playerName){
     const snap=showAlien?{...p.snapshot,...p.alien_diff}:p.snapshot;
     payload.snapshot=snap;payload.question=p.question;payload.options=p.options;
     payload.text='Study the castle record carefully.';
-  } else if(room.id==='quarantine'){
+  } else if(room.id==='quarantine'||room.id==='relic-vault'){
     const lbl=showAlien?p.alien:p.human;
     payload.labels=lbl;payload.items=[...p.items];shuffle(payload.items);
     payload.text=`Sort items: ${lbl.a} vs ${lbl.b}`;
@@ -335,8 +373,8 @@ function nextTestee(){
     const room=ROOMS[G.selectedRoom],pidx=(G.round-1)%room.prompts.length,p=room.prompts[pidx];
     let hp='';
     if(room.id==='deliberation')hp=p.human;
-    else if(['opinion','writing','crisis'].includes(room.id))hp=p.human;
-    else if(room.id==='quarantine')hp=`${p.human.a} / ${p.human.b}`;
+    else if(['opinion','writing','crisis','war-map','torch-signal','market-rumor','alibi-ledger'].includes(room.id))hp=p.human;
+    else if(room.id==='quarantine'||room.id==='relic-vault')hp=`${p.human.a} / ${p.human.b}`;
     else if(room.id==='blackbox')hp=p.question;
     else if(room.id==='royal-whisper')hp='Who gave testimony true to the royal word?';
     else if(room.id==='herald-chain')hp=`Chain started with: "${G.heraldPair?.seed||'?'}" — did anyone\'s words drift?`;
@@ -417,11 +455,16 @@ function scheduleBotForRoom(botName,roomId){
     else if(roomId==='royal-whisper'){
       const words=['brave','ancient','mighty','fierce','cursed','loyal','swift','dark'];
       action('submit-answer',{answer:words[Math.floor(Math.random()*words.length)]},botName,bot.token);
-    } else if(roomId==='deliberation'){
+    } else if(roomId==='deliberation'||roomId==='war-map'||roomId==='torch-signal'){
       const room=ROOMS[G.selectedRoom];
       const pidx=(G.round-1)%room.prompts.length;
       const choices=room.prompts[pidx]?.choices||['Agree'];
       action('submit-answer',{answer:choices[Math.floor(Math.random()*choices.length)]},botName,bot.token);
+    } else if(roomId==='relic-vault'){
+      const room=ROOMS[G.selectedRoom];
+      const pidx=(G.round-1)%room.prompts.length;
+      const items=[...(room.prompts[pidx]?.items||[])];shuffle(items);
+      action('submit-answer',{answer:JSON.stringify({a:items.slice(0,3),b:items.slice(3)})},botName,bot.token);
     } else if(roomId==='herald-chain'){
       const words=['shadow','blade','feast','raven','ember','stone','vale','thorn','mist','iron'];
       action('submit-answer',{answer:words[Math.floor(Math.random()*words.length)]},botName,bot.token);
@@ -429,6 +472,12 @@ function scheduleBotForRoom(botName,roomId){
       action('submit-answer',{rating:Math.floor(Math.random()*5)+1},botName,bot.token);
     } else if(roomId==='opinion'){
       action('submit-answer',{answer:String(Math.floor(Math.random()*5))},botName,bot.token);
+    } else if(roomId==='market-rumor'){
+      const rumors=['The west wall holds until sunrise.','The steward has bread stored safely.','The bells mean help is near.','The guard has sealed the old gate.'];
+      action('submit-answer',{answer:rumors[Math.floor(Math.random()*rumors.length)]},botName,bot.token);
+    } else if(roomId==='alibi-ledger'){
+      const alibis=['I was by the pantry carrying a candle.','I was near the stairs with a sealed note.','I saw the steward and stayed by the wall.','I was fetching water for the guards.','I was in the archive checking the ledger.'];
+      action('submit-answer',{answer:alibis[Math.floor(Math.random()*alibis.length)]},botName,bot.token);
     } else if(roomId==='blackbox'){
       const room=ROOMS[G.selectedRoom];const pidx=(G.round-1)%room.prompts.length;
       const opts=room.prompts[pidx]?.options||['option A'];
@@ -461,13 +510,68 @@ function resolveThroneVote(){
 }
 
 function nextRound(){
-  G.round++;G.selectedRoom=null;G.selectedTestees=[];G.answers={};G.roomTesteeIdx=0;
+  G.round++;G.selectedRoom=null;G.selectedTestees=[];G.answers={};G.preChallengeReady={};G.roomTesteeIdx=0;
   G.dungeon=null;G.heraldPair=null;G.throneVote=null;
   G.extraction={pusher:null,suspects:[],votes:{}};
   const a=alive();
   if(!a.length){endGame('no-players');return;}
   G.captainIdx=G.captainIdx%a.length;
   G.phase='captain-hub';push();
+}
+
+function scheduleBotInstructionConfirm(name){
+  const player=G.players.find(p=>p.name===name);
+  if(!player?.isBot)return;
+  setTimeout(()=>action('confirm-instructions',{},name,player.token),450+Math.random()*900);
+}
+
+function beginSelectedRoom(){
+  const r=ROOMS[G.selectedRoom];if(!r)return;
+  G.roomTesteeIdx=0;G.answers={};G.preChallengeReady={};
+  if(r.id==='royal-whisper'){
+    const pairs=r.wordPairs;
+    G.royalWhisperPair=pairs[Math.floor(Math.random()*pairs.length)];
+    G.royalWhisperSecrets={};
+  }
+  if(r.id==='herald-chain'){
+    G.heraldPair=r.wordPairs[Math.floor(Math.random()*r.wordPairs.length)];
+  }
+  if(r.id==='throne-vote'){
+    const stmt=r.statements[Math.floor(Math.random()*r.statements.length)];
+    G.throneVote={statement:stmt,answers:{}};
+    G.phase='room-active';push();
+    G.selectedTestees.forEach(name=>{
+      const player=G.players.find(p=>p.name===name);if(!player)return;
+      const isAlien=player.role==='alien';
+      const isHacked=!!G.activeHacks[name];
+      const showAlien=isHacked?!isAlien:isAlien;
+      if(isHacked){delete G.activeHacks[name];player.hacked=false;}
+      toPlayer(name,'prompt',{roomId:'throne-vote',roomName:r.name,timerSeconds:r.timerSeconds,
+        statement:showAlien?stmt.alien:stmt.human,isAlien:showAlien});
+      if(player.isBot)scheduleBotForRoom(name,'throne-vote');
+    });
+    startRoom(r.timerSeconds,()=>resolveThroneVote());
+    return;
+  }
+  if(r.id==='dungeon-trial'){
+    const q=r.questions[Math.floor(Math.random()*r.questions.length)];
+    G.dungeon={question:q.question,options:q.options,correctIndex:q.correctIndex,answers:{},wrongPlayers:null,gobletChoices:null,gobletPoisoned:null,cursedThisRound:null};
+    G.phase='room-active';push();
+    G.selectedTestees.forEach(name=>{
+      const player=G.players.find(p=>p.name===name);if(!player)return;
+      const isAlien=player.role==='alien';
+      const isHacked=!!G.activeHacks[name];
+      const showAlien=isHacked?!isAlien:isAlien;
+      if(isHacked){delete G.activeHacks[name];player.hacked=false;}
+      toPlayer(name,'prompt',{roomId:'dungeon-trial',roomName:r.name,timerSeconds:r.timerSeconds,
+        question:q.question,options:q.options,isAlien:showAlien});
+      if(player.isBot)scheduleBotForRoom(name,'dungeon-trial');
+    });
+    startRoom(r.timerSeconds,()=>resolveDungeonQuestion());
+    return;
+  }
+  G.phase='room-waiting';push();
+  sendPrompt(G.selectedTestees[0]);
 }
 
 function endGame(reason,data=null){
@@ -493,6 +597,100 @@ function resetSamePlayers(){
 }
 
 // ═══════════════════════════════ ACTION HANDLER ═══════════════════════════════
+function revealSelectedRoomWithAdminSkips(){
+  const room=ROOMS[G.selectedRoom];
+  if(!room||!G.selectedTestees.length)return false;
+  stopRoom();
+  if(room.id==='throne-vote'){
+    if(!G.throneVote)return false;
+    resolveThroneVote();
+    return true;
+  }
+  if(room.id==='dungeon-trial'){
+    if(!G.dungeon)return false;
+    if(G.phase==='dungeon-goblet'){
+      G.dungeon.wrongPlayers.forEach(n=>{
+        if(G.dungeon.gobletChoices[n]==null)G.dungeon.gobletChoices[n]=Math.floor(Math.random()*2);
+      });
+      resolveGoblet();
+    } else {
+      resolveDungeonQuestion();
+    }
+    return true;
+  }
+  G.selectedTestees.forEach(n=>{
+    if(!G.answers[n])G.answers[n]='(admin skipped)';
+  });
+  G.roomTesteeIdx=G.selectedTestees.length;
+  const pidx=(G.round-1)%room.prompts.length,p=room.prompts[pidx];
+  let hp='';
+  if(room.id==='deliberation')hp=p.human;
+  else if(['opinion','writing','crisis','war-map','torch-signal','market-rumor','alibi-ledger'].includes(room.id))hp=p.human;
+  else if(room.id==='quarantine'||room.id==='relic-vault')hp=`${p.human.a} / ${p.human.b}`;
+  else if(room.id==='blackbox')hp=p.question;
+  else if(room.id==='royal-whisper')hp='Who gave testimony true to the royal word?';
+  else if(room.id==='herald-chain')hp=`Chain started with: "${G.heraldPair?.seed||'?'}" - did anyone's words drift?`;
+  else hp=p.captain||'';
+  G.probeHistory.push({round:G.round,room:G.selectedRoom,humanPrompt:hp,
+    entries:G.selectedTestees.map(n=>({player:n,answer:G.answers[n]||'(admin skipped)'}))});
+  G.phase='reveal';push();
+  return true;
+}
+
+function returnToCaptainHubFromOverride(){
+  if(!G.players.length)return false;
+  stopRoom();
+  G.selectedRoom=null;G.selectedTestees=[];G.answers={};G.preChallengeReady={};G.roomTesteeIdx=0;
+  G.dungeon=null;G.heraldPair=null;G.throneVote=null;
+  G.royalWhisperPair=null;G.royalWhisperSecrets={};
+  G.extraction={pusher:null,suspects:[],votes:{}};
+  if(G.round<1)G.round=1;
+  G.phase='captain-hub';
+  if(G.shipTimerMax&&G.shipTimerLeft>0)startShip();
+  push();
+  return true;
+}
+
+function adminOverride(op){
+  console.log('[admin-override]',op,'phase',G.phase,'room',G.selectedRoom);
+  switch(op){
+    case 'start-room':
+      if(G.phase!=='pre-challenge')return false;
+      if(!ROOMS[G.selectedRoom]||!G.selectedTestees.length)return false;
+      G.selectedTestees.forEach(n=>{G.preChallengeReady[n]=true;});
+      push();
+      beginSelectedRoom();
+      return true;
+    case 'force-reveal':
+      if(!['pre-challenge','room-waiting','room-active','dungeon-goblet'].includes(G.phase))return false;
+      if(G.phase==='pre-challenge')beginSelectedRoom();
+      return revealSelectedRoomWithAdminSkips();
+    case 'next-round':
+      if(G.phase==='role-reveal'){nextRound();return true;}
+      if(['reveal','dungeon-reveal','room-waiting','room-active','dungeon-goblet','pre-challenge','extraction'].includes(G.phase)){
+        stopRoom();
+        G.captainIdx=(G.captainIdx+1)%Math.max(alive().length,1);
+        nextRound();
+        return true;
+      }
+      if(G.phase==='gameover'){resetSamePlayers();return true;}
+      return false;
+    case 'captain-hub':
+      if(['lobby','role-reveal'].includes(G.phase))return false;
+      return returnToCaptainHubFromOverride();
+    case 'fail-vote':
+      if(G.phase!=='extraction')return false;
+      G.phase=Object.keys(G.answers).length?'reveal':'captain-hub';
+      G.preChallengeReady={};
+      G.extraction={pusher:null,suspects:[],votes:{}};
+      if(G.shipTimerMax&&G.shipTimerLeft>0)startShip();
+      push();
+      return true;
+    default:
+      return false;
+  }
+}
+
 function action(type,data,fromPlayer,token=''){
   // test-mode is lobby-only and harmless — skip token check
   if(type==='test-mode'){
@@ -509,11 +707,15 @@ function action(type,data,fromPlayer,token=''){
   const cap=captain();
   const isCap=cap?.name===fromPlayer;
   switch(type){
+    case 'admin-override':
+      if(fromPlayer!=='__host__')return;
+      adminOverride(data.op);
+      break;
     case 'room-select':
       if(!isCap||G.phase!=='captain-hub')return;
       if(!ROOMS[data.roomId])return;
       if(ROOMS[data.roomId]?.latePool&&G.round<3&&!G.testMode)return;
-      G.selectedRoom=data.roomId;G.selectedTestees=[];push();break;
+      G.selectedRoom=data.roomId;G.selectedTestees=[];G.preChallengeReady={};push();break;
     case 'testee-toggle':{
       if(!isCap||G.phase!=='captain-hub')return;
       const r=ROOMS[G.selectedRoom];if(!r)return;
@@ -522,6 +724,7 @@ function action(type,data,fromPlayer,token=''){
       const i=G.selectedTestees.indexOf(data.name);
       if(i>-1)G.selectedTestees.splice(i,1);
       else if(G.selectedTestees.length<mx)G.selectedTestees.push(data.name);
+      G.preChallengeReady={};
       push();break;}
     case 'test-mode':{
       G.testMode=true;
@@ -547,52 +750,21 @@ function action(type,data,fromPlayer,token=''){
       if(!isCap||G.phase!=='captain-hub')return;
       const r=ROOMS[G.selectedRoom];if(!r)return;
       if(G.selectedTestees.length<r.testeeRange[0])return;
-      G.roomTesteeIdx=0;G.answers={};
-      if(r.id==='royal-whisper'){
-        const pairs=r.wordPairs;
-        G.royalWhisperPair=pairs[Math.floor(Math.random()*pairs.length)];
-        G.royalWhisperSecrets={};
+      if(G.selectedTestees.length>r.testeeRange[1])return;
+      G.preChallengeReady={};
+      G.phase='pre-challenge';
+      push();
+      G.selectedTestees.forEach(scheduleBotInstructionConfirm);
+      break;}
+    case 'confirm-instructions':{
+      if(G.phase!=='pre-challenge')return;
+      if(!G.selectedTestees.includes(fromPlayer))return;
+      G.preChallengeReady[fromPlayer]=true;
+      push();
+      if(G.selectedTestees.length&&G.selectedTestees.every(n=>G.preChallengeReady[n])){
+        beginSelectedRoom();
       }
-      if(r.id==='herald-chain'){
-        G.heraldPair=r.wordPairs[Math.floor(Math.random()*r.wordPairs.length)];
-      }
-      if(r.id==='throne-vote'){
-        const stmt=r.statements[Math.floor(Math.random()*r.statements.length)];
-        G.throneVote={statement:stmt,answers:{}};
-        G.phase='room-active';push();
-        G.selectedTestees.forEach(name=>{
-          const player=G.players.find(p=>p.name===name);if(!player)return;
-          const isAlien=player.role==='alien';
-          const isHacked=!!G.activeHacks[name];
-          const showAlien=isHacked?!isAlien:isAlien;
-          if(isHacked){delete G.activeHacks[name];player.hacked=false;}
-          toPlayer(name,'prompt',{roomId:'throne-vote',roomName:r.name,timerSeconds:r.timerSeconds,
-            statement:showAlien?stmt.alien:stmt.human,isAlien:showAlien});
-          if(player.isBot)scheduleBotForRoom(name,'throne-vote');
-        });
-        startRoom(r.timerSeconds,()=>resolveThroneVote());
-        break;
-      }
-      if(r.id==='dungeon-trial'){
-        const q=r.questions[Math.floor(Math.random()*r.questions.length)];
-        G.dungeon={question:q.question,options:q.options,correctIndex:q.correctIndex,answers:{},wrongPlayers:null,gobletChoices:null,gobletPoisoned:null,cursedThisRound:null};
-        G.phase='room-active';push();
-        // Send question prompt to ALL testees simultaneously
-        G.selectedTestees.forEach(name=>{
-          const player=G.players.find(p=>p.name===name);if(!player)return;
-          const isAlien=player.role==='alien';
-          const isHacked=!!G.activeHacks[name];
-          const showAlien=isHacked?!isAlien:isAlien;
-          if(isHacked){delete G.activeHacks[name];player.hacked=false;}
-          toPlayer(name,'prompt',{roomId:'dungeon-trial',roomName:r.name,timerSeconds:r.timerSeconds,
-            question:q.question,options:q.options,isAlien:showAlien});
-          if(player.isBot)scheduleBotForRoom(name,'dungeon-trial');
-        });
-        startRoom(r.timerSeconds,()=>resolveDungeonQuestion());
-        break;
-      }
-      G.phase='room-waiting';push();
-      sendPrompt(G.selectedTestees[0]);break;}
+      break;}
     case 'submit-answer':
       if(G.selectedRoom==='throne-vote'){
         if(!G.throneVote||G.phase!=='room-active')return;
@@ -649,6 +821,7 @@ function action(type,data,fromPlayer,token=''){
     case 'push-button':
       if(!['captain-hub','reveal','dungeon-reveal'].includes(G.phase))return;
       if(!isAlivePlayer(fromPlayer)||G.players.find(p=>p.name===fromPlayer)?.cursed||G.buttonPushersUsed.has(fromPlayer))return;
+      G.preChallengeReady={};
       G.buttonPushersUsed.add(fromPlayer);
       G.extraction={pusher:fromPlayer,suspects:[],votes:{}};
       G.phase='extraction';stopShip();stopRoom();push();break;
@@ -675,13 +848,16 @@ function action(type,data,fromPlayer,token=''){
       if(humanEjected){endGame('humanEjected',suspects);return;}
       suspects.forEach(n=>{const p=G.players.find(x=>x.name===n);if(p)p.alive=false;});
       const aliensLeft=G.players.filter(p=>p.role==='alien'&&p.alive);
+      const aliveLeft=G.players.filter(p=>p.alive);
       if(!aliensLeft.length){endGame('humansWin',suspects);return;}
+      if(aliveLeft.length<=2){endGame('aliensWin',suspects);return;}
       G.captainIdx=(G.captainIdx+1)%Math.max(alive().length,1);
       startShip();nextRound();break;}
     case 'vote-fail':
       if(G.phase!=='extraction')return;
       if(!isAlivePlayer(fromPlayer)&&fromPlayer!=='__host__')return;
       G.phase=Object.keys(G.answers).length?'reveal':'captain-hub';
+      G.preChallengeReady={};
       G.captainIdx=(G.captainIdx+1)%Math.max(alive().length,1);
       startShip();push();break;
     case 'continue':
@@ -705,6 +881,7 @@ function action(type,data,fromPlayer,token=''){
       const alienCount=n<=4?1:n<=7?2:3;
       const alienIdx=shuffle([...Array(n).keys()]).slice(0,alienCount);
       G.players.forEach((p,i)=>{p.role=alienIdx.includes(i)?'alien':'human';p.alive=true;p.hacked=false;p.cursed=false;});
+      G.preChallengeReady={};
       G.shipTimerMax=(12+Math.floor((n-4)*8/6))*60;
       G.shipTimerLeft=G.shipTimerMax;
       G.phase='role-reveal';
